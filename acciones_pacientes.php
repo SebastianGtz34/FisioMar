@@ -1,66 +1,133 @@
 <?php
-/**
- * Archivo: acciones_pacientes.php
- * Usado por: index.php
- *
- * Objetivo:
- * - Recibir datos del formulario de registro de paciente.
- * - Dejar preparado el punto para integrar MySQL más adelante.
- */
+include_once 'conn.php';
+header('Content-Type: application/json');
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: index.php');
+$accion = isset($_POST['accion']) ? trim($_POST['accion']) : '';
+$usuario = isset($_COOKIE['id_usuarioL']) ? $_COOKIE['id_usuarioL'] : '';
+
+$nombre = isset($_POST['nombre']) ? trim($_POST['nombre']) : '';
+$apellido = isset($_POST['apellido']) ? trim($_POST['apellido']) : '';
+$fechaNacimiento = isset($_POST['fechaNacimiento']) ? trim($_POST['fechaNacimiento']) : '';
+$telefono = isset($_POST['telefono']) ? trim($_POST['telefono']) : '';
+$correo = isset($_POST['correo']) ? trim($_POST['correo']) : '';
+$ocupacion = isset($_POST['ocupacion']) ? trim($_POST['ocupacion']) : '';
+$estadoCivil = isset($_POST['estadoCivil']) ? trim($_POST['estadoCivil']) : '';
+$seguroMedico = isset($_POST['seguroMedico']) ? trim($_POST['seguroMedico']) : '';
+$archivoOrigen = isset($_POST['archivo_origen']) ? trim($_POST['archivo_origen']) : 'index.php';
+
+if (!$conn instanceof mysqli) {
+    echo json_encode([
+        'success' => false,
+        'status' => 'error',
+        'message' => 'No se pudo conectar a MySQL. ' . (isset($conn_error) ? $conn_error : '')
+    ]);
     exit;
 }
 
-$nombreCompleto = trim($_POST['nombreCompleto'] ?? '');
-$fechaNacimiento = trim($_POST['fechaNacimiento'] ?? '');
-$telefono = trim($_POST['telefono'] ?? '');
-$correo = trim($_POST['correo'] ?? '');
-$ocupacion = trim($_POST['ocupacion'] ?? '');
-$estadoCivil = trim($_POST['estadoCivil'] ?? '');
-$seguroMedico = trim($_POST['seguroMedico'] ?? '');
-$archivoOrigen = trim($_POST['archivo_origen'] ?? 'index.php');
+if ($accion == 'guardarPaciente') {
+    if ($nombre === '' || $apellido === '' || $fechaNacimiento === '' || $telefono === '' || $correo === '') {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Faltan campos obligatorios del paciente.'
+        ]);
+        exit;
+    }
 
-if ($nombreCompleto === '' || $fechaNacimiento === '' || $telefono === '' || $correo === '') {
-    echo '<h3>Faltan campos obligatorios.</h3>';
-    echo '<p><a href="index.php">Volver a index.php</a></p>';
+    $sql = "INSERT INTO pacientes (
+                nombre,
+                apellido,
+                fecha_nacimiento,
+                telefono,
+                correo,
+                ocupacion,
+                estado_civil,
+                seguro_medico,
+                usuario_registro,
+                archivo_origen,
+                fecha_registro
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        echo json_encode([
+            'success' => false,
+            'status' => 'error',
+            'message' => 'Error al preparar consulta: ' . $conn->error
+        ]);
+        exit;
+    }
+
+    $stmt->bind_param(
+        'ssssssssss',
+        $nombre,
+        $apellido,
+        $fechaNacimiento,
+        $telefono,
+        $correo,
+        $ocupacion,
+        $estadoCivil,
+        $seguroMedico,
+        $usuario,
+        $archivoOrigen
+    );
+
+    if ($stmt->execute()) {
+        echo json_encode([
+            'success' => true,
+            'status' => 'success',
+            'message' => 'Paciente guardado correctamente.',
+            'id_paciente' => $conn->insert_id
+        ]);
+    } else {
+        echo json_encode([
+            'success' => false,
+            'status' => 'error',
+            'message' => 'Error al guardar paciente: ' . $stmt->error
+        ]);
+    }
+
+    $stmt->close();
     exit;
 }
 
-// PUNTO DE INTEGRACIÓN FUTURA:
-// Aquí se agregará la conexión a MySQL (WAMP) y el INSERT real.
+if ($accion == 'obtenerPacientes') {
+    $sql = "SELECT
+                id_paciente,
+                nombre,
+                apellido,
+                TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) AS edad,
+                telefono,
+                correo,
+                fecha_registro
+            FROM pacientes
+            ORDER BY id_paciente DESC";
 
-?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acción de Paciente</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
-<div class="container py-5">
-    <div class="card">
-        <div class="card-body">
-            <h1 class="h4 mb-3">Registro recibido (modo placeholder)</h1>
-            <p class="mb-2">El formulario fue enviado correctamente desde <strong><?php echo htmlspecialchars($archivoOrigen, ENT_QUOTES, 'UTF-8'); ?></strong>.</p>
-            <p class="text-muted mb-4">Pendiente: guardar en MySQL cuando se integre la base de datos.</p>
+    $result = $conn->query($sql);
+    if (!$result) {
+        echo json_encode([
+            'success' => false,
+            'status' => 'error',
+            'message' => 'Error al obtener pacientes: ' . $conn->error
+        ]);
+        exit;
+    }
 
-            <ul class="list-group mb-4">
-                <li class="list-group-item"><strong>Nombre:</strong> <?php echo htmlspecialchars($nombreCompleto, ENT_QUOTES, 'UTF-8'); ?></li>
-                <li class="list-group-item"><strong>Fecha de Nacimiento:</strong> <?php echo htmlspecialchars($fechaNacimiento, ENT_QUOTES, 'UTF-8'); ?></li>
-                <li class="list-group-item"><strong>Teléfono:</strong> <?php echo htmlspecialchars($telefono, ENT_QUOTES, 'UTF-8'); ?></li>
-                <li class="list-group-item"><strong>Correo:</strong> <?php echo htmlspecialchars($correo, ENT_QUOTES, 'UTF-8'); ?></li>
-                <li class="list-group-item"><strong>Ocupación:</strong> <?php echo htmlspecialchars($ocupacion, ENT_QUOTES, 'UTF-8'); ?></li>
-                <li class="list-group-item"><strong>Estado Civil:</strong> <?php echo htmlspecialchars($estadoCivil, ENT_QUOTES, 'UTF-8'); ?></li>
-                <li class="list-group-item"><strong>Seguro Médico:</strong> <?php echo htmlspecialchars($seguroMedico, ENT_QUOTES, 'UTF-8'); ?></li>
-            </ul>
+    $rows = [];
+    while ($row = $result->fetch_assoc()) {
+        $rows[] = $row;
+    }
 
-            <a href="index.php" class="btn btn-primary">Volver a Inicio</a>
-        </div>
-    </div>
-</div>
-</body>
-</html>
+    echo json_encode([
+        'success' => true,
+        'status' => 'success',
+        'data' => $rows
+    ]);
+    exit;
+}
+
+echo json_encode([
+    'success' => false,
+    'status' => 'error',
+    'message' => 'Acción no válida para acciones_pacientes.php.'
+]);
+exit;
