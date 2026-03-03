@@ -3,27 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FISIOMAR</title>
-
+    <title>FISIOMAR - Inicio</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
 </head>
 <body class="bg-light">
-<div class="container-fluid">
-    <div class="row min-vh-100">
-        <!-- MENÚ LATERAL -->
-        <aside id="menuContainer" class="col-12 col-lg-2 p-0"></aside>
-
-        <main class="col-12 col-lg-10 p-0">
-            <!-- ENCABEZADO PRINCIPAL -->
-            <header class="bg-white border-bottom px-4 py-3 d-flex justify-content-between align-items-center sticky-top">
-                <h1 class="h4 mb-0" id="mainTitle">Inicio</h1>
-                <div class="d-flex align-items-center gap-3 text-secondary">
-                    <i class="bi bi-bell"></i>
-                    <i class="bi bi-person-circle fs-4"></i>
-                </div>
-            </header>
-
+<!-- Page Wrapper -->
+<div id="wrapper" class="d-flex min-vh-100" style="height: 100vh;">
+    <!-- Menú lateral -->
+    <div class="bg-pink d-flex flex-column" style="min-width: 220px; height: 100vh; overflow-y: auto;">
+        <?php include 'menu.php'; ?>
+    </div>
+    <!-- Área principal -->
+    <div id="content-wrapper" class="flex-grow-1 d-flex flex-column" style="height: 100vh; overflow-y: auto;">
+        <!-- Encabezado -->
+        <?php include 'encabezado.php'; ?>
+        <!-- Contenido principal -->
+        <div id="content" class="container-fluid flex-grow-1">
             <div class="p-4">
                 <!-- SECCIÓN INICIO -->
                 <section id="section-inicio" class="page-section">
@@ -171,6 +168,8 @@
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+<script src="funcionesJS.js"></script>
 <script>
     $(function () {
         $('#menuContainer').load('menu.php', function () {
@@ -179,7 +178,7 @@
             $('#menu .nav-link[data-page="' + currentFile + '"]').addClass('active');
         });
 
-        cargarPacientes();
+        CargarPX();
 
         // DEMO acciones de tabla
         $(document).on('click', '.btn-ver', function () {
@@ -190,23 +189,7 @@
             alert('Placeholder: editar paciente.');
         });
 
-        function cargarPacientes() {
-            $.ajax({
-                url: 'acciones_pacientes.php',
-                method: 'POST',
-                dataType: 'json',
-                data: { accion: 'obtenerPacientes' }
-            }).done(function (response) {
-                if (!response || !response.success || !Array.isArray(response.data)) {
-                    return;
-                }
-
-                pintarTablaPacientes(response.data);
-                pintarMetricas(response.data);
-            }).fail(function () {
-                console.error('No se pudieron cargar los pacientes desde el servidor.');
-            });
-        }
+        // ...función global CargarPX() se usará desde funcionesJS.js...
 
         function pintarTablaPacientes(pacientes) {
             var tbody = $('#rowSinPacientes').closest('tbody');

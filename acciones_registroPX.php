@@ -3,7 +3,7 @@ include_once 'conn.php';
 header('Content-Type: application/json');
 
 $accion = isset($_POST['accion']) ? trim($_POST['accion']) : '';
-$usuario = isset($_COOKIE['id_usuarioL']) ? $_COOKIE['id_usuarioL'] : '';
+$usuario = isset($_COOKIE['id_usuario']) ? $_COOKIE['id_usuario'] : '';
 
 $nombre = isset($_POST['nombre']) ? trim($_POST['nombre']) : '';
 $apellido = isset($_POST['apellido']) ? trim($_POST['apellido']) : '';
@@ -23,10 +23,11 @@ $fechaCita = isset($_POST['fechaCita']) ? trim($_POST['fechaCita']) : '';
 $horaCita = isset($_POST['horaCita']) ? trim($_POST['horaCita']) : '';
 $contactoEmergencia = isset($_POST['contactoEmergencia']) ? trim($_POST['contactoEmergencia']) : '';
 $telefonoEmergencia = isset($_POST['telefonoEmergencia']) ? trim($_POST['telefonoEmergencia']) : '';
-$archivoOrigen = isset($_POST['archivo_origen']) ? trim($_POST['archivo_origen']) : 'registro_px.php';
 
+// REGISTRAR NUEVO PACIENTE
 if ($accion == 'guardarRegistroPX') {
-    if ($nombre === '' || $apellido === '' || $fechaNacimiento === '' || $sexo === '' || $telefono === '' || $correo === '') {
+    // Validar campos obligatorios
+    if ($nombre === '' || $apellido === '' || $fechaNacimiento === '' || $sexo === '' || $telefono === '') {
         echo json_encode([
             'success' => false,
             'message' => 'Faltan campos obligatorios del registro PX.'
@@ -34,30 +35,39 @@ if ($accion == 'guardarRegistroPX') {
         exit;
     }
 
-    $sqlRegistraPX = "INSERT INTO pacientes (
-                nombre,
-                apellido,
-                fecha_nacimiento,
-                sexo,
-                edad,
-                estado_civil,
-                ocupacion,
-                telefono,
-                correo,
-                seguro_medico,
-                diagnostico,
-                antecedentes,
-                folio,
-                estatus,
-                fecha_cita,
-                hora_cita,
-                contacto_emergencia,
-                telefono_emergencia,
-                usuario_registro,
-                archivo_origen,
-                fecha_registro
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+    // Verificar duplicados por nombre, apellido y teléfono
+    $sqlDuplicado = "SELECT id_paciente FROM pacientes WHERE nombre = ? AND apellido = ? AND telefono = ?";
+    $stmtDup = $conn->prepare($sqlDuplicado);
+    if (!$stmtDup) {
+        echo json_encode([
+            'success' => false,
+            'status' => 'error',
+            'message' => 'Error al preparar consulta de duplicados: ' . $conn->error
+        ]);
+        exit;
+    }
+    $stmtDup->bind_param('sss', $nombre, $apellido, $telefono);
+    $stmtDup->execute();
+    $stmtDup->store_result();
+    if ($stmtDup->num_rows > 0) {
+        echo json_encode([
+            'success' => false,
+            'status' => 'duplicado',
+            'message' => 'Ya existe un paciente registrado con estos datos.'
+        ]);
+        $stmtDup->close();
+        exit;
+    }
+    $stmtDup->close();
 
+    // Insertar nuevo paciente
+    $sqlRegistraPX = "INSERT INTO pacientes (
+                                nombre, apellido, fecha_nacimiento, sexo, edad,
+                                estado_civil, ocupacion, telefono, correo,
+                                seguro_medico, diagnostico, antecedentes, folio,
+                                estatus, contacto_emergencia, telefono_emergencia, fecha_registro)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+    echo $sqlRegistraPX; // Debug: mostrar la consulta SQL antes de prepararla
     $stmt = $conn->prepare($sqlRegistraPX);
     if (!$stmt) {
         echo json_encode([
@@ -69,7 +79,7 @@ if ($accion == 'guardarRegistroPX') {
     }
 
     $stmt->bind_param(
-        'ssssisssssssssssssss',
+        'ssssisssssssssss',
         $nombre,
         $apellido,
         $fechaNacimiento,
@@ -84,12 +94,8 @@ if ($accion == 'guardarRegistroPX') {
         $antecedentes,
         $folio,
         $estatus,
-        $fechaCita,
-        $horaCita,
         $contactoEmergencia,
-        $telefonoEmergencia,
-        $usuario,
-        $archivoOrigen
+        $telefonoEmergencia
     );
 
     if ($stmt->execute()) {
@@ -111,6 +117,7 @@ if ($accion == 'guardarRegistroPX') {
     exit;
 }
 
+// OBTENER REGISTROS DE PACIENTES
 if ($accion == 'obtenerRegistroPX') {
     $sqlObeterReg = "SELECT
                 id_paciente AS id_registro_px,
@@ -149,9 +156,6 @@ if ($accion == 'obtenerRegistroPX') {
     exit;
 }
 
-echo json_encode([
-    'success' => false,
-    'status' => 'error',
-    'message' => 'Acción no válida para acciones_registroPX.php.'
-]);
+//
+
 exit;
