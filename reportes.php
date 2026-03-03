@@ -8,19 +8,13 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
-<div class="container-fluid">
-    <div class="row min-vh-100">
-        <aside id="menuContainer" class="col-12 col-lg-2 p-0"></aside>
-
-        <main class="col-12 col-lg-10 p-0">
-            <header class="bg-white border-bottom px-4 py-3 d-flex justify-content-between align-items-center sticky-top">
-                <h1 class="h4 mb-0">Reportes</h1>
-                <div class="d-flex align-items-center gap-3 text-secondary">
-                    <i class="bi bi-bell"></i>
-                    <i class="bi bi-person-circle fs-4"></i>
-                </div>
-            </header>
-
+<div id="wrapper" class="d-flex min-vh-100">
+    <div class="bg-pink text-white d-flex flex-column h-auto flex-shrink-0" style="overflow-y: auto; min-width: 220px;">
+        <?php include 'menu.php'; ?>
+    </div>
+    <div id="content-wrapper" class="flex-grow-1 d-flex flex-column" style="overflow-y: auto;">
+        <?php include 'encabezado.php'; ?>
+        <div id="content" class="container-fluid flex-grow-1">
             <div class="p-4">
                 <div class="card">
                     <div class="card-body">

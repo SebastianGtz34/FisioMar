@@ -9,21 +9,13 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
-<div class="container-fluid">
-    <div class="row min-vh-100">
-        <!-- MENÚ LATERAL -->
-        <aside id="menuContainer" class="col-12 col-lg-2 p-0"></aside>
-
-        <main class="col-12 col-lg-10 p-0">
-            <!-- ENCABEZADO PRINCIPAL -->
-            <header class="bg-white border-bottom px-4 py-3 d-flex justify-content-between align-items-center sticky-top">
-                <h1 class="h4 mb-0">Registrar Paciente</h1>
-                <div class="d-flex align-items-center gap-3 text-secondary">
-                    <i class="bi bi-bell"></i>
-                    <i class="bi bi-person-circle fs-4"></i>
-                </div>
-            </header>
-
+<div id="wrapper" class="d-flex min-vh-100">
+    <div class="bg-pink text-white d-flex flex-column h-auto flex-shrink-0" style="overflow-y: auto; min-width: 220px;">
+        <?php include 'menu.php'; ?>
+    </div>
+    <div id="content-wrapper" class="flex-grow-1 d-flex flex-column" style="overflow-y: auto;">
+        <?php include 'encabezado.php'; ?>
+        <div id="content" class="container-fluid flex-grow-1">
             <div class="p-4">
                 <div class="card">
                     <div class="card-body">
@@ -34,12 +26,6 @@
                             </li>
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="datos-clinicos-tab" data-bs-toggle="tab" data-bs-target="#datos-clinicos" type="button" role="tab" aria-controls="datos-clinicos" aria-selected="false">Datos Clínicos</button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="datos-admin-tab" data-bs-toggle="tab" data-bs-target="#datos-admin" type="button" role="tab" aria-controls="datos-admin" aria-selected="false">Datos Administrativos</button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="agenda-tab" data-bs-toggle="tab" data-bs-target="#agenda" type="button" role="tab" aria-controls="agenda" aria-selected="false">Agendar Cita Rápida</button>
                             </li>
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="emergencia-tab" data-bs-toggle="tab" data-bs-target="#emergencia" type="button" role="tab" aria-controls="emergencia" aria-selected="false">Contacto de Emergencia</button>
@@ -84,7 +70,7 @@
 
                                         <div class="col-12 col-md-6">
                                             <label for="edad" class="form-label">Edad</label>
-                                            <input type="number" class="form-control" id="edad" name="edad" min="0" max="120" placeholder="Edad calculada o manual">
+                                            <input type="number" class="form-control" id="edad" name="edad" min="0" max="120" inputmode="numeric" pattern="[0-9]*" placeholder="Edad calculada o manual">
                                         </div>
                                         <div class="col-12 col-md-6">
                                             <label for="estadoCivil" class="form-label">Estado Civil</label>
@@ -109,7 +95,7 @@
 
                                         <div class="col-12 col-md-6">
                                             <label for="correo" class="form-label">Correo Electrónico</label>
-                                            <input type="email" class="form-control" id="correo" name="correo" placeholder="Correo Electrónico" required>
+                                            <input type="email" class="form-control" id="correo" name="correo" placeholder="Correo Electrónico">
                                         </div>
                                         <div class="col-12 col-md-6">
                                             <label for="seguroMedico" class="form-label">Seguro Médico</label>
@@ -148,39 +134,7 @@
                                     </div>
                                 </div>
 
-                                <!-- DATOS ADMINISTRATIVOS -->
-                                <div class="tab-pane fade" id="datos-admin" role="tabpanel" aria-labelledby="datos-admin-tab" tabindex="0">
-                                    <h2 class="h5 mb-3">Datos Administrativos</h2>
-                                    <div class="row g-3">
-                                        <div class="col-12 col-md-6">
-                                            <label for="folio" class="form-label">Folio de Paciente</label>
-                                            <input type="text" class="form-control" id="folio" name="folio" placeholder="Folio interno">
-                                        </div>
-                                        <div class="col-12 col-md-6">
-                                            <label for="estatus" class="form-label">Estatus</label>
-                                            <select class="form-select" id="estatus" name="estatus">
-                                                <option value="">Seleccionar estatus</option>
-                                                <option>Activo</option>
-                                                <option>Inactivo</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
 
-                                <!-- AGENDAR CITA -->
-                                <div class="tab-pane fade" id="agenda" role="tabpanel" aria-labelledby="agenda-tab" tabindex="0">
-                                    <h2 class="h5 mb-3">Agendar Cita Rápida</h2>
-                                    <div class="row g-3">
-                                        <div class="col-12 col-md-6">
-                                            <label for="fechaCita" class="form-label">Fecha de Cita</label>
-                                            <input type="date" class="form-control" id="fechaCita" name="fechaCita">
-                                        </div>
-                                        <div class="col-12 col-md-6">
-                                            <label for="horaCita" class="form-label">Hora de Cita</label>
-                                            <input type="time" class="form-control" id="horaCita" name="horaCita">
-                                        </div>
-                                    </div>
-                                </div>
 
                                 <!-- CONTACTO EMERGENCIA -->
                                 <div class="tab-pane fade" id="emergencia" role="tabpanel" aria-labelledby="emergencia-tab" tabindex="0">
