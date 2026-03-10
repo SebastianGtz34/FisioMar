@@ -1,4 +1,26 @@
 // Funciones globales para FisioMar
+// Función para obtener las citas del día desde el servidor
+function CargarCitasHoy(callback) {
+    var hoy = new Date();
+    var yyyy = hoy.getFullYear();
+    var mm = String(hoy.getMonth() + 1).padStart(2, '0');
+    var dd = String(hoy.getDate()).padStart(2, '0');
+    var fechaHoy = yyyy + '-' + mm + '-' + dd;
+    $.ajax({
+        url: 'acciones_citas.php',
+        method: 'POST',
+        dataType: 'json',
+        data: { accion: 'obtenerCitasDia', fecha: fechaHoy }
+    }).done(function(response) {
+        if (response && response.success && Array.isArray(response.data)) {
+            if (typeof callback === 'function') callback(response.data);
+        } else {
+            if (typeof callback === 'function') callback([]);
+        }
+    }).fail(function() {
+        if (typeof callback === 'function') callback([]);
+    });
+}
 
 // Función para obtener la lista de pacientes desde el servidor
 function selectPX(callback) {

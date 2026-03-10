@@ -1,4 +1,4 @@
-    <?php
+<?php
 include_once 'conn.php';
 header('Content-Type: application/json');
 
@@ -12,7 +12,6 @@ $hora = isset($_POST['hora']) ? trim($_POST['hora']) : '';
 $motivo = isset($_POST['motivo']) ? trim($_POST['motivo']) : '';
 $estado = isset($_POST['estado']) ? trim($_POST['estado']) : 'Programada';
 
-
 // CREAR NUEVA CITA
 if ($accion == 'crearCita') {
     $sql = "INSERT INTO citas (
@@ -22,24 +21,46 @@ if ($accion == 'crearCita') {
                 motivo,
                 estado
             ) VALUES (?, ?, ?, ?, ?)";
-    echo $sql;
     $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        echo json_encode([
+            'success' => false,
+            'status' => 'error',
+            'message' => 'Error al preparar consulta: ' . $conn->error
+        ]);
+        exit;
+    }
     $stmt->bind_param('issss', $id_paciente, $fecha, $hora, $motivo, $estado);
+    if ($stmt->execute()) {
+        echo json_encode([
+            'success' => true,
+            'status' => 'success',
+            'message' => 'Cita registrada correctamente.',
+            'id_cita' => $conn->insert_id
+        ]);
+    } else {
+        echo json_encode([
+            'success' => false,
+            'status' => 'error',
+            'message' => 'Error al registrar cita: ' . $stmt->error
+        ]);
+    }
     $stmt->close();
+    exit;
 }
 
 // OBTENER LISTA DE CITAS
 if ($accion == 'obtenerCitas') {
     $sql = "SELECT
-                id_cita,
-                paciente,
-                fecha,
-                hora,
-                motivo,
-                estado,
-                fecha_registro
-            FROM citas
-            ORDER BY fecha DESC, hora DESC";
+                c.id_cita,
+                CONCAT(p.nombre, ' ', p.apellido) AS paciente,
+                c.fecha,
+                c.hora,
+                c.motivo,
+                c.estado
+            FROM citas c
+            INNER JOIN pacientes p ON c.id_paciente = p.id_paciente
+            ORDER BY c.fecha DESC, c.hora DESC";
 
     $result = $conn->query($sql);
 
@@ -48,6 +69,33 @@ if ($accion == 'obtenerCitas') {
         $rows[] = $row;
     }
 
+    echo json_encode([
+        'success' => true,
+        'status' => 'success',
+        'data' => $rows
+    ]);
+    exit;
+}
+
+// OBTENER CITAS DEL DÍA
+if ($accion == 'obtenerCitasDia') {
+
+    $sql = "SELECT
+                c.id_cita,
+                CONCAT(p.nombre, ' ', p.apellido) AS paciente,
+                c.fecha,
+                c.hora,
+                c.motivo,
+                c.estado
+            FROM citas c
+            INNER JOIN pacientes p ON c.id_paciente = p.id_paciente
+                WHERE c.fecha = CURDATE()
+            ORDER BY c.hora ASC";
+        $result = $conn->query($sql);
+    $rows = [];
+    while ($row = $result->fetch_assoc()) {
+        $rows[] = $row;
+    }
     echo json_encode([
         'success' => true,
         'status' => 'success',
@@ -132,3 +180,5 @@ if ($accion == 'eliminarCita') {
 }
 
 exit;
+
+?>

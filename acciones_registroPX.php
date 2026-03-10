@@ -66,8 +66,7 @@ if ($accion == 'guardarRegistroPX') {
                                 estado_civil, ocupacion, telefono, correo,
                                 seguro_medico, diagnostico, antecedentes, folio,
                                 estatus, contacto_emergencia, telefono_emergencia, fecha_registro)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
-    echo $sqlRegistraPX; // Debug: mostrar la consulta SQL antes de prepararla
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Activo', ?, ?, NOW())";
     $stmt = $conn->prepare($sqlRegistraPX);
     if (!$stmt) {
         echo json_encode([
@@ -79,7 +78,7 @@ if ($accion == 'guardarRegistroPX') {
     }
 
     $stmt->bind_param(
-        'ssssisssssssssss',
+        'ssssissssssssss',
         $nombre,
         $apellido,
         $fechaNacimiento,
@@ -93,7 +92,6 @@ if ($accion == 'guardarRegistroPX') {
         $diagnostico,
         $antecedentes,
         $folio,
-        $estatus,
         $contactoEmergencia,
         $telefonoEmergencia
     );
@@ -130,7 +128,7 @@ if ($accion == 'obtenerRegistroPX') {
                 estatus,
                 fecha_registro
             FROM pacientes
-            WHERE archivo_origen = 'registro_px.php'
+            WHERE archivo_origen = 'registro_px.php' AND estatus = 'Activo'
             ORDER BY id_paciente DESC";
 
     $result = $conn->query($sqlObeterReg);

@@ -54,7 +54,7 @@
                                                     <div class="mb-3">
                                                         <label for="citaEstado" class="form-label">Estado</label>
                                                         <select class="form-select" id="citaEstado" name="citaEstado" required>
-                                                            <option value="Programada">Programada</option>
+                                                            <option value="Programada" selected>Programada</option>
                                                             <option value="Reprogramada">Reprogramada</option>
                                                             <option value="Cancelada">Cancelada</option>
                                                         </select>
@@ -124,6 +124,11 @@
             document.getElementById('formCita').reset();
             $('#modalCita').modal('show');
         });
+        // Agregar submit handler para guardar cita
+        document.getElementById('formCita').addEventListener('submit', function(e) {
+            e.preventDefault();
+            guardarCita();
+        });
     });
 
         // Poblar select de pacientes al cargar la página
@@ -155,16 +160,15 @@
                 },
                 success: function(response) {
                     if (response && response.success) {
-                        //$('#modalCita').modal('hide');
-                        //obtenerCitas();
-                        
+                        $('#formCita')[0].reset();
+                        $('#modalCita').modal('hide');
+                        obtenerCitas();
+                        swalalert('Éxito', response.message || 'Cita registrada correctamente.', 'success');
                     } else {
                         swalalert('Error', response.message || 'Error al guardar la cita.', 'error');
-
                     }
                 },
             });     
-                     
         }
 
         // Función para formatear fecha dd/mm/yyyy

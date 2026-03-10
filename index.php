@@ -97,10 +97,9 @@
                                         <table class="table table-sm table-bordered mb-0">
                                             <thead class="table-light">
                                             <tr>
+                                                <th>Nombre</th>
                                                 <th>Fecha</th>
                                                 <th>Hora</th>
-                                                <th>Paciente</th>
-                                                <th>Motivo</th>
                                             </tr>
                                             </thead>
                                             <tbody>
@@ -108,10 +107,8 @@
                                                 <td> </td>
                                                 <td> </td>
                                                 <td> </td>
-                                                <td> </td>
                                             </tr>
                                             <tr>
-                                                <td> </td>
                                                 <td> </td>
                                                 <td> </td>
                                                 <td> </td>
@@ -170,6 +167,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 <script src="funcionesJS.js"></script>
+
 <script>
     $(function () {
         $('#menuContainer').load('menu.php', function () {
@@ -178,7 +176,38 @@
             $('#menu .nav-link[data-page="' + currentFile + '"]').addClass('active');
         });
 
-        CargarPX();
+        // Cargar y mostrar pacientes reales al iniciar
+        CargarPX(function(pacientes) {
+            pintarTablaPacientes(pacientes);
+            pintarMetricas(pacientes);
+        });
+
+        // Cargar y mostrar próximas citas reales al iniciar
+        // Usar función global para cargar citas del día
+        CargarCitasHoy(function(citasHoy) {
+            pintarTablaCitasIndex(citasHoy);
+            $('#metricaCitasDia').text(citasHoy.length);
+        });
+
+        function pintarTablaCitasIndex(citas) {
+            var tbody = $('.card:contains("Próximas Citas") table tbody');
+            tbody.empty();
+            if (!citas.length) {
+                tbody.append('<tr><td colspan="3" class="text-center text-muted">Sin citas registradas.</td></tr>');
+                return;
+            }
+            citas.slice(0, 5).forEach(function(cita) {
+                var fecha = cita.fecha || '';
+                var hora = cita.hora || '';
+                var paciente = cita.paciente || '';
+                var row = '<tr>' +
+                    '<td>' + escaparHtml(paciente) + '</td>' +
+                    '<td>' + escaparHtml(fecha) + '</td>' +
+                    '<td>' + escaparHtml(hora) + '</td>' +
+                '</tr>';
+                tbody.append(row);
+            });
+        }
 
         // DEMO acciones de tabla
         $(document).on('click', '.btn-ver', function () {
@@ -188,8 +217,6 @@
         $(document).on('click', '.btn-editar', function () {
             alert('Placeholder: editar paciente.');
         });
-
-        // ...función global CargarPX() se usará desde funcionesJS.js...
 
         function pintarTablaPacientes(pacientes) {
             var tbody = $('#rowSinPacientes').closest('tbody');
@@ -211,7 +238,6 @@
                     '<td>' + escaparHtml(telefono) + '</td>' +
                     '<td>' +
                         '<button type="button" class="btn btn-sm btn-outline-primary btn-ver me-1">Ver</button>' +
-                        '<button type="button" class="btn btn-sm btn-outline-success btn-editar">Editar</button>' +
                     '</td>' +
                 '</tr>';
 
@@ -234,7 +260,6 @@
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#39;');
         }
-
     });
 </script>
 </body>
