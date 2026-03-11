@@ -7,9 +7,48 @@
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
         <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body class="bg-light">
 <div id="wrapper" class="d-flex min-vh-100">
+        <!-- Modal Reprogramar Cita -->
+        <div class="modal fade" id="modalReprogramar" tabindex="-1" aria-labelledby="modalReprogramarLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalReprogramarLabel">Reprogramar cita</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <form id="formReprogramar">
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="reproPaciente" class="form-label">Paciente</label>
+                                <input type="text" class="form-control" id="reproPaciente" name="reproPacienteNombre" disabled>
+                                <input type="hidden" id="reproPacienteHidden" name="reproPaciente">
+                            </div>
+                            <div class="mb-3">
+                                <label for="reproFecha" class="form-label">Fecha</label>
+                                <input type="date" class="form-control" id="reproFecha" name="reproFecha" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="reproHora" class="form-label">Hora</label>
+                                <input type="time" class="form-control" id="reproHora" name="reproHora" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="reproMotivo" class="form-label">Motivo</label>
+                                <textarea class="form-control" id="reproMotivo" name="reproMotivo" rows="2" required></textarea>
+                            </div>
+                            <input type="hidden" id="reproIdCita" name="reproIdCita">
+                            <input type="hidden" id="id_paciente" name="id_paciente" value="">
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-outline-success">Guardar cambios</button>
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
         <div class="bg-pink text-white d-flex flex-column h-auto flex-shrink-0" style="overflow-y: auto; min-width: 220px;">
                 <?php include 'menu.php'; ?>
         </div>
@@ -20,7 +59,7 @@
                                 <!-- Encabezado principal -->
                                 <div class="d-flex justify-content-between align-items-center mb-4">
                                         <h1 class="h3 mb-0">Citas</h1>
-                                        <button id="btnNuevaCita" class="btn btn-primary btn-lg"><i class="bi bi-calendar-plus me-2"></i>Registrar nueva cita</button>
+                                        <button id="btnNuevaCita" class="btn btn-outline-primary btn-lg"><i class="bi bi-calendar-plus me-2"></i>Registrar nueva cita</button>
                                 </div>
 
                                 <!-- Formulario de nueva cita (modal) -->
@@ -94,15 +133,24 @@
                                     </div>
                                 </div>
 
-                                <!-- Calendario/Próximas citas -->
-                                <div class="card">
+                                <!-- Tabla de citas realizadas -->
+                                <div class="card mb-4">
                                     <div class="card-header bg-white">
-                                        <h2 class="h5 mb-0">Próximas Citas</h2>
+                                        <h2 class="h5 mb-0">Citas Realizadas</h2>
                                     </div>
-                                    <div class="card-body">
-                                        <div class="row g-2" id="proximasCitas">
-                                            <!-- Aquí se mostrarán las próximas citas -->
-                                        </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover mb-0" id="tablaCitasRealizadas">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Paciente</th>
+                                                    <th>Fecha</th>
+                                                    <th>Hora</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr><td colspan="3" class="text-center text-muted">Sin citas realizadas.</td></tr>
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
                         </div>
@@ -116,18 +164,145 @@
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 <script src="funcionesJS.js"></script>
 <script>
-
     document.addEventListener('DOMContentLoaded', function () {
+                        // Cargar citas realizadas al iniciar
+                        cargarCitasRealizadas();
+
+                        function cargarCitasRealizadas() {
+                            $.ajax({
+                                url: 'acciones_citas.php',
+                                method: 'POST',
+                                dataType: 'json',
+                                data: { accion: 'obtenerCitasRealizadas' },
+                                success: function(response) {
+                                    if (response && response.success && Array.isArray(response.data)) {
+                                        pintarTablaCitasRealizadas(response.data);
+                                    } else {
+                                        pintarTablaCitasRealizadas([]);
+                                    }
+                                },
+                                error: function() {
+                                    pintarTablaCitasRealizadas([]);
+                                }
+                            });
+                        }
+
+                        function pintarTablaCitasRealizadas(citas) {
+                            var tbody = $('#tablaCitasRealizadas tbody');
+                            tbody.empty();
+                            if (!citas.length) {
+                                tbody.append('<tr><td colspan="3" class="text-center text-muted">Sin citas realizadas.</td></tr>');
+                                return;
+                            }
+                            citas.forEach(function(cita) {
+                                var fechaFormateada = formatearFecha(cita.fecha);
+                                var row = '<tr>' +
+                                    '<td>' + cita.paciente + '</td>' +
+                                    '<td>' + fechaFormateada + '</td>' +
+                                    '<td>' + cita.hora + '</td>' +
+                                '</tr>';
+                                tbody.append(row);
+                            });
+                        }
+                // Handler para eliminar cita
+                $(document).off('click', '.btn-outline-danger').on('click', '.btn-outline-danger', function() {
+                    var row = $(this).closest('tr');
+                    var idCita = row.find('.btn-reprogramar').data('id');
+                    if (!idCita) {
+                        Swal.fire('Error', 'No se pudo identificar la cita.', 'error');
+                        return;
+                    }
+                    Swal.fire({
+                        title: '¿Eliminar cita?',
+                        text: '¿Estás seguro de eliminar esta cita?',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Sí, eliminar',
+                        cancelButtonText: 'Cancelar'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $.ajax({
+                                url: 'acciones_citas.php',
+                                method: 'POST',
+                                dataType: 'json',
+                                data: { accion: 'eliminarCita', id_cita: idCita },
+                                success: function(response) {
+                                    if (response && response.success) {
+                                        obtenerCitas();
+                                        Swal.fire('Eliminada', response.message || 'Cita eliminada correctamente.', 'success');
+                                    } else {
+                                        Swal.fire('Error', response.message || 'Error al eliminar la cita.', 'error');
+                                    }
+                                },
+                                error: function() {
+                                    Swal.fire('Error', 'Error de conexión al eliminar la cita.', 'error');
+                                }
+                            });
+                        }
+                    });
+                });
         poblarSelectPacientes();
         obtenerCitas();
-        document.getElementById('btnNuevaCita').addEventListener('click', function () {
-            document.getElementById('formCita').reset();
+        $('#btnNuevaCita').off('click').on('click', function () {
+            $('#formCita')[0].reset();
             $('#modalCita').modal('show');
         });
-        // Agregar submit handler para guardar cita
-        document.getElementById('formCita').addEventListener('submit', function(e) {
+        // Handler para guardar cita
+        $('#formCita').off('submit').on('submit', function(e) {
             e.preventDefault();
             guardarCita();
+        });
+        // Handler para reprogramar cita
+        $(document).off('click', '.btn-reprogramar').on('click', '.btn-reprogramar', function() {
+            var idCita = $(this).data('id');
+            cargarDatosCita(idCita, function(cita) {
+                if (!cita) {
+                    Swal.fire('Error', 'No se pudo cargar la cita.', 'error');
+                    return;
+                }
+                $('#reproIdCita').val(cita.id_cita);
+                $('#reproPaciente').val(cita.id_paciente);
+                $('#id_paciente').val(cita.id_paciente);
+                $('#reproPacienteNombre').val(cita.paciente);
+                $('#reproFecha').val(cita.fecha);
+                $('#reproHora').val(cita.hora);
+                $('#reproMotivo').val(cita.motivo);
+                $('#reproEstado').val('Reprogramada'); 
+                $('#id_usuario').val(getCookie('id_usuario'));
+                $('#modalReprogramar').modal('show');
+            });
+        });
+        // Handler para guardar reprogramación
+        $('#formReprogramar').off('submit').on('submit', function(e) {
+            e.preventDefault();
+            var datos = {
+                accion: 'editarCita',
+                id_cita: $('#reproIdCita').val(),
+                id_paciente: $('#reproPaciente').val(),
+                fecha: $('#reproFecha').val(),
+                hora: $('#reproHora').val(),
+                motivo: $('#reproMotivo').val(),
+                estado: 'Reprogramada',
+                id_usuario: $('#id_usuario').val()
+            };
+            $.ajax({
+                url: 'acciones_citas.php',
+                method: 'POST',
+                dataType: 'json',
+                data: datos,
+                success: function(response) {
+                    if (response && response.success) {
+                        $('#modalReprogramar').modal('hide');
+                        obtenerCitas();
+                        Swal.fire('Éxito', response.message || 'Cita reprogramada correctamente.', 'success');
+                    } else {
+                        Swal.fire('Error', response.message || 'Error al reprogramar la cita.', 'error');
+                    }
+                },
+                error: function() {
+                    Swal.fire('Error', 'Error de conexión al reprogramar la cita.', 'error');
+                }
+            });
         });
     });
 
@@ -163,9 +338,9 @@
                         $('#formCita')[0].reset();
                         $('#modalCita').modal('hide');
                         obtenerCitas();
-                        swalalert('Éxito', response.message || 'Cita registrada correctamente.', 'success');
+                        Swal.fire('Éxito', response.message || 'Cita registrada correctamente.', 'success');
                     } else {
-                        swalalert('Error', response.message || 'Error al guardar la cita.', 'error');
+                        Swal.fire('Error', response.message || 'Error al guardar la cita.', 'error');
                     }
                 },
             });     
@@ -219,12 +394,32 @@
                     '<td>' + cita.motivo + '</td>' +
                     '<td>' + cita.estado + '</td>' +
                     '<td>' +
-                        '<button class="btn btn-sm btn-info me-1">Ver</button>' +
-                        '<button class="btn btn-sm btn-warning me-1">Editar</button>' +
-                        '<button class="btn btn-sm btn-danger">Eliminar</button>' +
+                        '<button class="btn btn-sm btn-outline-warning me-1 btn-reprogramar" data-id="' + cita.id_cita + '">Reprogramar</button>' +
+                        '<button class="btn btn-sm btn-outline-danger">Eliminar</button>' +
                     '</td>' +
                 '</tr>';
                 tbody.append(row);
+            });
+        }
+
+        // Función global para cargar datos de cita por id
+        function cargarDatosCita(idCita, callback) {
+            $.ajax({
+                url: 'acciones_citas.php',
+                method: 'POST',
+                dataType: 'json',
+                data: { accion: 'obtenerCitas', id_cita: idCita },
+                success: function(response) {
+                    if (response && response.success && Array.isArray(response.data)) {
+                        var cita = response.data.find(function(c) { return c.id_cita == idCita; });
+                        if (typeof callback === 'function') callback(cita);
+                    } else {
+                        if (typeof callback === 'function') callback(null);
+                    }
+                },
+                error: function() {
+                    if (typeof callback === 'function') callback(null);
+                }
             });
         }
 
@@ -241,12 +436,19 @@
                             '<div class="fw-bold">' + cita.paciente + '</div>' +
                             '<div><i class="bi bi-calendar-event me-1"></i>' + fechaFormateada + ' ' + cita.hora + '</div>' +
                             '<div class="small text-muted">' + cita.motivo + '</div>' +
-                            '<span class="badge bg-' + (cita.estado === 'Programada' ? 'primary' : cita.estado === 'Realizada' ? 'success' : 'danger') + ' float-end">' + cita.estado + '</span>' +
+                            '<span class="badge bg-' + (cita.estado === 'Programada' ? 'primary' : cita.estado === 'Realizada' ? 'success' : 'warning') + ' float-end">' + cita.estado + '</span>' +
                         '</div>' +
                     '</div>' +
                 '</div>';
                 cont.append(card);
             });
+        }
+
+        // Función para obtener el valor de una cookie
+        function getCookie(name) {
+            var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+            if (match) return match[2];
+            return '';
         }
 </script>
 </body>

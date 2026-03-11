@@ -1,16 +1,12 @@
 // Funciones globales para FisioMar
+
 // Función para obtener las citas del día desde el servidor
 function CargarCitasHoy(callback) {
-    var hoy = new Date();
-    var yyyy = hoy.getFullYear();
-    var mm = String(hoy.getMonth() + 1).padStart(2, '0');
-    var dd = String(hoy.getDate()).padStart(2, '0');
-    var fechaHoy = yyyy + '-' + mm + '-' + dd;
     $.ajax({
         url: 'acciones_citas.php',
         method: 'POST',
         dataType: 'json',
-        data: { accion: 'obtenerCitasDia', fecha: fechaHoy }
+        data: { accion: 'obtenerCitasDia' }
     }).done(function(response) {
         if (response && response.success && Array.isArray(response.data)) {
             if (typeof callback === 'function') callback(response.data);
@@ -19,6 +15,24 @@ function CargarCitasHoy(callback) {
         }
     }).fail(function() {
         if (typeof callback === 'function') callback([]);
+    });
+}
+
+// Función para obtener el total de citas realizadas
+function CargarTotalSesionesRealizadas(callback) {
+    $.ajax({
+        url: 'acciones_citas.php',
+        method: 'POST',
+        dataType: 'json',
+        data: { accion: 'obtenerTotalSesionesRealizadas' }
+    }).done(function(response) {
+        var total = 0;
+        if (response && response.success && response.data && typeof response.data.total !== 'undefined') {
+            total = parseInt(response.data.total, 10) || 0;
+        }
+        if (typeof callback === 'function') callback(total);
+    }).fail(function() {
+        if (typeof callback === 'function') callback(0);
     });
 }
 
@@ -37,6 +51,24 @@ function selectPX(callback) {
         }
     }).fail(function () {
         callback([]);
+    });
+}
+
+// Función global para cargar próximas citas (no realizadas)
+function cargarProximasCitas(callback) {
+    $.ajax({
+        url: 'acciones_citas.php',
+        method: 'POST',
+        dataType: 'json',
+        data: { accion: 'obtenerCitas' },
+    }).done(function(response) {
+        if (response && response.success && Array.isArray(response.data)) {
+            if (typeof callback === 'function') callback(response.data);
+        } else {
+            if (typeof callback === 'function') callback([]);
+        }
+    }).fail(function() {
+        if (typeof callback === 'function') callback([]);
     });
 }
 
