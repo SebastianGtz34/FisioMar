@@ -53,6 +53,7 @@ if ($accion == 'crearCita') {
 if ($accion == 'obtenerCitas') {
     $sql = "SELECT
                 c.id_cita,
+                c.id_paciente,
                 CONCAT(p.nombre, ' ', p.apellido) AS paciente,
                 c.fecha,
                 c.hora,
@@ -60,6 +61,7 @@ if ($accion == 'obtenerCitas') {
                 c.estado
             FROM citas c
             INNER JOIN pacientes p ON c.id_paciente = p.id_paciente
+            WHERE c.estado <> 'Realizada'
             ORDER BY c.fecha DESC, c.hora DESC";
 
     $result = $conn->query($sql);
@@ -90,7 +92,8 @@ if ($accion == 'obtenerCitasDia') {
             FROM citas c
             INNER JOIN pacientes p ON c.id_paciente = p.id_paciente
                 WHERE c.fecha = CURDATE()
-            ORDER BY c.hora ASC";
+                AND c.estado NOT IN ('Realizada', 'Cancelada')
+            ORDER BY ABS(TIMESTAMPDIFF(SECOND, NOW(), TIMESTAMP(c.fecha, c.hora))) ASC";
         $result = $conn->query($sql);
     $rows = [];
     while ($row = $result->fetch_assoc()) {
@@ -100,6 +103,51 @@ if ($accion == 'obtenerCitasDia') {
         'success' => true,
         'status' => 'success',
         'data' => $rows
+    ]);
+    exit;
+}
+
+// OBTENER CITAS REALIZADAS
+if ($accion == 'obtenerCitasRealizadas') {
+    $sql = "SELECT
+                c.id_cita,
+                c.id_paciente,
+                CONCAT(p.nombre, ' ', p.apellido) AS paciente,
+                c.fecha,
+                c.hora
+            FROM citas c
+            INNER JOIN pacientes p ON c.id_paciente = p.id_paciente
+            WHERE c.estado = 'Realizada'
+            ORDER BY c.fecha DESC, c.hora DESC";
+    $result = $conn->query($sql);
+    $rows = [];
+    while ($row = $result->fetch_assoc()) {
+        $rows[] = $row;
+    }
+    echo json_encode([
+        'success' => true,
+        'status' => 'success',
+        'data' => $rows
+    ]);
+    exit;
+}
+
+// OBTENER TOTAL DE CITAS REALIZADAS
+if ($accion == 'obtenerTotalSesionesRealizadas') {
+    $sql = "SELECT COUNT(*) AS total FROM citas WHERE estado = 'Realizada'";
+    $result = $conn->query($sql);
+
+    $total = 0;
+    if ($result && $row = $result->fetch_assoc()) {
+        $total = (int) $row['total'];
+    }
+
+    echo json_encode([
+        'success' => true,
+        'status' => 'success',
+        'data' => [
+            'total' => $total
+        ]
     ]);
     exit;
 }

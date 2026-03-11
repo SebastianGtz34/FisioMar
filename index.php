@@ -50,18 +50,22 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-12 col-md-6 col-xl-3">
-                            <div class="card text-bg-info h-100">
-                                <div class="card-body">
-                                    <small class="d-block">Reportes Generados:</small>
-                                    <h2 class="h3 mb-0" id="metricaReportes">0</h2>
-                                </div>
-                            </div>
-                        </div>
                     </div>
 
                     <div class="row g-4">
                         <div class="col-12">
+                            <!-- CITAS DE HOY -->
+                            <div class="card">
+                                <div class="card-header bg-white">
+                                    <h2 class="h5 mb-0">Citas de Hoy</h2>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-2" id="citasHoyCards">
+                                        <!-- Aquí se mostrarán las citas de hoy -->
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- TABLA DE PACIENTES -->
                             <div class="card mb-4">
                                 <div class="card-header bg-white">
@@ -74,7 +78,6 @@
                                             <th>Nombre</th>
                                             <th>Edad</th>
                                             <th>Teléfono</th>
-                                            <th>Acciones</th>
                                         </tr>
                                         </thead>
                                         <tbody>
@@ -85,81 +88,11 @@
                                     </table>
                                 </div>
                             </div>
-
-                            <!-- PRÓXIMAS CITAS -->
-                            <div class="card">
-                                <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                                    <h2 class="h5 mb-0">Próximas Citas</h2>
-                                    <a href="#" class="btn btn-sm btn-outline-secondary">Ver Todas</a>
-                                </div>
-                                <div class="card-body">
-                                    <div class="table-responsive">
-                                        <table class="table table-sm table-bordered mb-0">
-                                            <thead class="table-light">
-                                            <tr>
-                                                <th>Nombre</th>
-                                                <th>Fecha</th>
-                                                <th>Hora</th>
-                                            </tr>
-                                            </thead>
-                                            <tbody>
-                                            <tr>
-                                                <td> </td>
-                                                <td> </td>
-                                                <td> </td>
-                                            </tr>
-                                            <tr>
-                                                <td> </td>
-                                                <td> </td>
-                                                <td> </td>
-                                            </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </section>
-
-                <section id="section-pacientes" class="page-section d-none">
-                    <div class="card">
-                        <div class="card-body">
-                            <h2 class="h4">Pacientes</h2>
-                            <p class="text-muted mb-0">Vista de gestión de pacientes.</p>
-                        </div>
-                    </div>
-                </section>
-
-                <section id="section-citas" class="page-section d-none">
-                    <div class="card">
-                        <div class="card-body">
-                            <h2 class="h4">Agenda de Citas</h2>
-                            <p class="text-muted mb-0">Placeholder: calendario/listado completo de citas.</p>
-                        </div>
-                    </div>
-                </section>
-
-                <section id="section-reportes" class="page-section d-none">
-                    <div class="card">
-                        <div class="card-body">
-                            <h2 class="h4">Reportes</h2>
-                            <p class="text-muted mb-0">Placeholder: módulo de reportes.</p>
-                        </div>
-                    </div>
-                </section>
-
-                <section id="section-archivos" class="page-section d-none">
-                    <div class="card">
-                        <div class="card-body">
-                            <h2 class="h4">Archivos</h2>
-                            <p class="text-muted mb-0">Placeholder: gestión de archivos clínicos.</p>
                         </div>
                     </div>
                 </section>
             </div>
-        </main>
+        </div>
     </div>
 </div>
 
@@ -170,53 +103,59 @@
 
 <script>
     $(function () {
-        $('#menuContainer').load('menu.php', function () {
-            var currentFile = window.location.pathname.split('/').pop() || 'index.php';
-            $('#menu .nav-link').removeClass('active');
-            $('#menu .nav-link[data-page="' + currentFile + '"]').addClass('active');
-        });
-
         // Cargar y mostrar pacientes reales al iniciar
         CargarPX(function(pacientes) {
             pintarTablaPacientes(pacientes);
             pintarMetricas(pacientes);
         });
 
-        // Cargar y mostrar próximas citas reales al iniciar
-        // Usar función global para cargar citas del día
+        // Cargar y mostrar citas de hoy al iniciar
         CargarCitasHoy(function(citasHoy) {
-            pintarTablaCitasIndex(citasHoy);
+            pintarTarjetasCitasHoy(citasHoy);
             $('#metricaCitasDia').text(citasHoy.length);
         });
 
-        function pintarTablaCitasIndex(citas) {
-            var tbody = $('.card:contains("Próximas Citas") table tbody');
-            tbody.empty();
+        // Cargar total de sesiones realizadas
+        CargarTotalSesionesRealizadas(function(total) {
+            $('#metricaSesiones').text(total);
+        });
+
+        function pintarTarjetasCitasHoy(citas) {
+            var contenedor = $('#citasHoyCards');
+            contenedor.empty();
+
             if (!citas.length) {
-                tbody.append('<tr><td colspan="3" class="text-center text-muted">Sin citas registradas.</td></tr>');
+                contenedor.append(
+                    '<div class="col-12">' +
+                        '<div class="alert alert-light border text-muted mb-0">Sin citas registradas para hoy.</div>' +
+                    '</div>'
+                );
                 return;
             }
+
             citas.slice(0, 5).forEach(function(cita) {
                 var fecha = cita.fecha || '';
                 var hora = cita.hora || '';
                 var paciente = cita.paciente || '';
-                var row = '<tr>' +
-                    '<td>' + escaparHtml(paciente) + '</td>' +
-                    '<td>' + escaparHtml(fecha) + '</td>' +
-                    '<td>' + escaparHtml(hora) + '</td>' +
-                '</tr>';
-                tbody.append(row);
+                var motivo = cita.motivo || 'Sin motivo';
+
+                var card =
+                    '<div class="col-12 col-md-6 col-xl-4">' +
+                        '<div class="card h-100 border-0 shadow-sm">' +
+                            '<div class="card-body">' +
+                                '<div class="d-flex justify-content-between align-items-start mb-2">' +
+                                    '<h3 class="h6 mb-0">' + escaparHtml(paciente) + '</h3>' +
+                                    '<span class="badge text-bg-info">' + escaparHtml(hora) + '</span>' +
+                                '</div>' +
+                                '<p class="mb-1 text-muted"><i class="bi bi-calendar-event me-1"></i>' + escaparHtml(fecha) + '</p>' +
+                                '<p class="mb-0 small"><i class="bi bi-journal-text me-1"></i>' + escaparHtml(motivo) + '</p>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>';
+
+                contenedor.append(card);
             });
         }
-
-        // DEMO acciones de tabla
-        $(document).on('click', '.btn-ver', function () {
-            alert('Placeholder: vista de paciente.');
-        });
-
-        $(document).on('click', '.btn-editar', function () {
-            alert('Placeholder: editar paciente.');
-        });
 
         function pintarTablaPacientes(pacientes) {
             var tbody = $('#rowSinPacientes').closest('tbody');
@@ -236,9 +175,7 @@
                     '<td>' + escaparHtml(nombreCompleto) + '</td>' +
                     '<td>' + escaparHtml(String(edad)) + '</td>' +
                     '<td>' + escaparHtml(telefono) + '</td>' +
-                    '<td>' +
-                        '<button type="button" class="btn btn-sm btn-outline-primary btn-ver me-1">Ver</button>' +
-                    '</td>' +
+                    '<td></td>' +
                 '</tr>';
 
                 tbody.append(row);
@@ -247,9 +184,6 @@
 
         function pintarMetricas(pacientes) {
             $('#metricaPacientesActivos').text(pacientes.length);
-            $('#metricaCitasDia').text(0);
-            $('#metricaSesiones').text(0);
-            $('#metricaReportes').text(0);
         }
 
         function escaparHtml(texto) {
