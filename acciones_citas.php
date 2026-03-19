@@ -3,7 +3,6 @@ include_once 'conn.php';
 header('Content-Type: application/json');
 
 $accion = isset($_POST['accion']) ? trim($_POST['accion']) : '';
-$usuario = isset($_COOKIE['id_usuario']) ? $_COOKIE['id_usuario'] : '';
 
 $id_cita = isset($_POST['id_cita']) ? intval($_POST['id_cita']) : 0;
 $id_paciente = isset($_POST['id_paciente']) ? intval($_POST['id_paciente']) : 0;
@@ -11,6 +10,10 @@ $fecha = isset($_POST['fecha']) ? trim($_POST['fecha']) : '';
 $hora = isset($_POST['hora']) ? trim($_POST['hora']) : '';
 $motivo = isset($_POST['motivo']) ? trim($_POST['motivo']) : '';
 $estado = isset($_POST['estado']) ? trim($_POST['estado']) : 'Programada';
+$diagnostico = isset($_POST['diagnostico']) ? trim($_POST['diagnostico']) : '';
+$antecedentes = isset($_POST['antecedentes']) ? trim($_POST['antecedentes']) : '';
+$exploracion = isset($_POST['exploracion']) ? trim($_POST['exploracion']) : '';
+$tratamiento = isset($_POST['tratamiento']) ? trim($_POST['tratamiento']) : '';
 
 // CREAR NUEVA CITA
 if ($accion == 'crearCita') {
@@ -61,7 +64,7 @@ if ($accion == 'obtenerCitas') {
                 c.estado
             FROM citas c
             INNER JOIN pacientes p ON c.id_paciente = p.id_paciente
-            WHERE c.estado <> 'Realizada'
+            WHERE c.estado = 'Programada'
             ORDER BY c.fecha DESC, c.hora DESC";
 
     $result = $conn->query($sql);
@@ -79,11 +82,58 @@ if ($accion == 'obtenerCitas') {
     exit;
 }
 
+// OBTENER LISTA DE CITAS AGRUPADAS POR ESTADO
+if ($accion == 'obtenerCitasPorEstado') {
+    $sql = "SELECT
+                c.id_cita,
+                c.id_paciente,
+                CONCAT(p.nombre, ' ', p.apellido) AS paciente,
+                c.fecha,
+                c.hora,
+                c.motivo,
+                c.estado
+            FROM citas c
+            INNER JOIN pacientes p ON c.id_paciente = p.id_paciente
+            WHERE c.estado IN ('Programada', 'Realizada', 'Reprogramada', 'Cancelada')
+            ORDER BY c.fecha DESC, c.hora DESC";
+
+    $result = $conn->query($sql);
+    if (!$result) {
+        echo json_encode([
+            'success' => false,
+            'status' => 'error',
+            'message' => 'Error al obtener citas por estado: ' . $conn->error
+        ]);
+        exit;
+    }
+
+    $agrupadas = [
+        'Programada' => [],
+        'Realizada' => [],
+        'Reprogramada' => [],
+        'Cancelada' => []
+    ];
+
+    while ($row = $result->fetch_assoc()) {
+        if (isset($agrupadas[$row['estado']])) {
+            $agrupadas[$row['estado']][] = $row;
+        }
+    }
+
+    echo json_encode([
+        'success' => true,
+        'status' => 'success',
+        'data' => $agrupadas
+    ]);
+    exit;
+}
+
 // OBTENER CITAS DEL DÍA
 if ($accion == 'obtenerCitasDia') {
 
     $sql = "SELECT
                 c.id_cita,
+                c.id_paciente,
                 CONCAT(p.nombre, ' ', p.apellido) AS paciente,
                 c.fecha,
                 c.hora,
@@ -107,28 +157,122 @@ if ($accion == 'obtenerCitasDia') {
     exit;
 }
 
-// OBTENER CITAS REALIZADAS
-if ($accion == 'obtenerCitasRealizadas') {
-    $sql = "SELECT
-                c.id_cita,
-                c.id_paciente,
-                CONCAT(p.nombre, ' ', p.apellido) AS paciente,
-                c.fecha,
-                c.hora
-            FROM citas c
-            INNER JOIN pacientes p ON c.id_paciente = p.id_paciente
-            WHERE c.estado = 'Realizada'
-            ORDER BY c.fecha DESC, c.hora DESC";
-    $result = $conn->query($sql);
-    $rows = [];
-    while ($row = $result->fetch_assoc()) {
-        $rows[] = $row;
+// FINALIZAR CITA Y GUARDAR BITACORA CLINICA
+if ($accion == 'finalizarCitaConBitacora') {
+    if ($id_cita <= 0 || $diagnostico === '' || $exploracion === '' || $tratamiento === '') {
+        echo json_encode([
+            'success' => false,
+            'status' => 'error',
+            'message' => 'Faltan datos obligatorios para registrar la bitácora clínica.'
+        ]);
+        exit;
     }
-    echo json_encode([
-        'success' => true,
-        'status' => 'success',
-        'data' => $rows
-    ]);
+
+    $sqlCita = "SELECT id_paciente, estado FROM citas WHERE id_cita = ? LIMIT 1";
+    $stmtCita = $conn->prepare($sqlCita);
+    if (!$stmtCita) {
+        echo json_encode([
+            'success' => false,
+            'status' => 'error',
+            'message' => 'Error al preparar consulta de cita: ' . $conn->error
+        ]);
+        exit;
+    }
+
+    $stmtCita->bind_param('i', $id_cita);
+    $stmtCita->execute();
+    $resultCita = $stmtCita->get_result();
+    $cita = $resultCita ? $resultCita->fetch_assoc() : null;
+    $stmtCita->close();
+
+    if (!$cita) {
+        echo json_encode([
+            'success' => false,
+            'status' => 'error',
+            'message' => 'La cita no existe.'
+        ]);
+        exit;
+    }
+
+    if ($cita['estado'] === 'Cancelada') {
+        echo json_encode([
+            'success' => false,
+            'status' => 'error',
+            'message' => 'No se puede finalizar una cita cancelada.'
+        ]);
+        exit;
+    }
+
+    if ($cita['estado'] === 'Realizada') {
+        echo json_encode([
+            'success' => false,
+            'status' => 'error',
+            'message' => 'Esta cita ya está marcada como realizada.'
+        ]);
+        exit;
+    }
+
+    $idPacienteCita = (int) $cita['id_paciente'];
+
+    try {
+        $conn->begin_transaction();
+
+        $sqlUpdate = "UPDATE citas SET estado = 'Realizada' WHERE id_cita = ?";
+        $stmtUpdate = $conn->prepare($sqlUpdate);
+        if (!$stmtUpdate) {
+            throw new Exception('Error al preparar actualización de cita: ' . $conn->error);
+        }
+        $stmtUpdate->bind_param('i', $id_cita);
+        if (!$stmtUpdate->execute()) {
+            throw new Exception('Error al actualizar estado de cita: ' . $stmtUpdate->error);
+        }
+        $stmtUpdate->close();
+
+        $sqlBitacora = "INSERT INTO datos_clinicos (
+                            id_paciente,
+                            id_cita,
+                            diagnostico,
+                            antecedentes,
+                            exploracion,
+                            tratamiento,
+                            fecha_registro
+                        ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)";
+        $stmtBitacora = $conn->prepare($sqlBitacora);
+        if (!$stmtBitacora) {
+            throw new Exception('Error al preparar inserción de bitácora: ' . $conn->error);
+        }
+
+        $stmtBitacora->bind_param(
+            'iissss',
+            $idPacienteCita,
+            $id_cita,
+            $diagnostico,
+            $antecedentes,
+            $exploracion,
+            $tratamiento
+        );
+
+        if (!$stmtBitacora->execute()) {
+            throw new Exception('Error al guardar bitácora clínica: ' . $stmtBitacora->error);
+        }
+        $stmtBitacora->close();
+
+        $conn->commit();
+
+        echo json_encode([
+            'success' => true,
+            'status' => 'success',
+            'message' => 'Cita finalizada y bitácora registrada correctamente.'
+        ]);
+    } catch (Exception $e) {
+        $conn->rollback();
+        echo json_encode([
+            'success' => false,
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ]);
+    }
+
     exit;
 }
 
@@ -199,7 +343,7 @@ if ($accion == 'eliminarCita') {
         ]);
         exit;
     }
-    $sql = "DELETE FROM citas WHERE id_cita=?";
+    $sql = "UPDATE citas SET estado='Cancelada' WHERE id_cita=?";
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
         echo json_encode([
@@ -214,13 +358,13 @@ if ($accion == 'eliminarCita') {
         echo json_encode([
             'success' => true,
             'status' => 'success',
-            'message' => 'Cita eliminada correctamente.'
+            'message' => 'Cita cancelada correctamente.'
         ]);
     } else {
         echo json_encode([
             'success' => false,
             'status' => 'error',
-            'message' => 'Error al eliminar cita: ' . $stmt->error
+            'message' => 'Error al cancelar cita: ' . $stmt->error
         ]);
     }
     $stmt->close();

@@ -7,7 +7,7 @@
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
         <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
-        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <link href="https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/css/iziToast.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
 <div id="wrapper" class="d-flex min-vh-100">
@@ -98,7 +98,6 @@
                                                             <option value="Cancelada">Cancelada</option>
                                                         </select>
                                                     </div>
-                                                    <div hidden id="accion" value="crearCita"></div>
                                                 </div>
                                                 <div class="modal-footer">
                                                     <button type="submit" class="btn btn-outline-success">Confirmar</button>
@@ -109,10 +108,26 @@
                                     </div>
                                 </div>
 
-                                <!-- Tabla de citas -->
-                                <div class="card mb-4">
+                                <!-- Selector de tabla por estado -->
+                                <div class="card mb-3">
+                                    <div class="card-body py-3">
+                                        <div class="btn-group" role="group" aria-label="Selector de tablas de citas">
+                                            <button type="button" class="btn btn-outline-primary btn-tabla-citas active" data-tabla="programadas">Programadas</button>
+                                            <button type="button" class="btn btn-outline-success btn-tabla-citas" data-tabla="realizadas">Realizadas</button>
+                                            <button type="button" class="btn btn-outline-warning btn-tabla-citas" data-tabla="reprogramadas">Reprogramadas</button>
+                                            <button type="button" class="btn btn-outline-danger btn-tabla-citas" data-tabla="canceladas">Canceladas</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Tabla de citas programadas -->
+                                <div class="card mb-4" id="cardTablaProgramadas">
                                     <div class="card-header bg-white">
-                                        <h2 class="h5 mb-0">Listado de Citas</h2>
+                                        <div class="d-flex flex-wrap align-items-center gap-2">
+                                            <h2 class="h5 mb-0 me-2">Citas Programadas</h2>
+                                            <input type="text" class="form-control form-control-sm filtro-paciente" placeholder="Buscar paciente..." style="max-width:220px;">
+                                            <input type="date" class="form-control form-control-sm filtro-fecha" style="max-width:170px;">
+                                        </div>
                                     </div>
                                     <div class="table-responsive">
                                         <table class="table table-hover mb-0" id="tablaCitas">
@@ -122,21 +137,24 @@
                                                     <th>Fecha</th>
                                                     <th>Hora</th>
                                                     <th>Motivo</th>
-                                                    <th>Estado</th>
                                                     <th>Acciones</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr><td colspan="6" class="text-center text-muted">Sin citas registradas.</td></tr>
+                                                <tr><td colspan="5" class="text-center text-muted">Sin citas registradas.</td></tr>
                                             </tbody>
                                         </table>
                                     </div>
                                 </div>
 
                                 <!-- Tabla de citas realizadas -->
-                                <div class="card mb-4">
+                                <div class="card mb-4 d-none" id="cardTablaRealizadas">
                                     <div class="card-header bg-white">
-                                        <h2 class="h5 mb-0">Citas Realizadas</h2>
+                                        <div class="d-flex flex-wrap align-items-center gap-2">
+                                            <h2 class="h5 mb-0 me-2">Citas Realizadas</h2>
+                                            <input type="text" class="form-control form-control-sm filtro-paciente" placeholder="Buscar paciente..." style="max-width:220px;">
+                                            <input type="date" class="form-control form-control-sm filtro-fecha" style="max-width:170px;">
+                                        </div>
                                     </div>
                                     <div class="table-responsive">
                                         <table class="table table-hover mb-0" id="tablaCitasRealizadas">
@@ -153,6 +171,56 @@
                                         </table>
                                     </div>
                                 </div>
+
+                                <!-- Tabla de citas reprogramadas -->
+                                <div class="card mb-4 d-none" id="cardTablaReprogramadas">
+                                    <div class="card-header bg-white">
+                                        <div class="d-flex flex-wrap align-items-center gap-2">
+                                            <h2 class="h5 mb-0 me-2">Citas Reprogramadas</h2>
+                                            <input type="text" class="form-control form-control-sm filtro-paciente" placeholder="Buscar paciente..." style="max-width:220px;">
+                                            <input type="date" class="form-control form-control-sm filtro-fecha" style="max-width:170px;">
+                                        </div>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover mb-0" id="tablaCitasReprogramadas">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Paciente</th>
+                                                    <th>Fecha</th>
+                                                    <th>Hora</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr><td colspan="3" class="text-center text-muted">Sin citas reprogramadas.</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- Tabla de citas canceladas -->
+                                <div class="card mb-4 d-none" id="cardTablaCanceladas">
+                                    <div class="card-header bg-white">
+                                        <div class="d-flex flex-wrap align-items-center gap-2">
+                                            <h2 class="h5 mb-0 me-2">Citas Canceladas</h2>
+                                            <input type="text" class="form-control form-control-sm filtro-paciente" placeholder="Buscar paciente..." style="max-width:220px;">
+                                            <input type="date" class="form-control form-control-sm filtro-fecha" style="max-width:170px;">
+                                        </div>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover mb-0" id="tablaCitasCanceladas">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Paciente</th>
+                                                    <th>Fecha</th>
+                                                    <th>Hora</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr><td colspan="3" class="text-center text-muted">Sin citas canceladas.</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                         </div>
                 </div>
         </div>
@@ -163,82 +231,76 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 <script src="funcionesJS.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/js/iziToast.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-                        // Cargar citas realizadas al iniciar
-                        cargarCitasRealizadas();
+                function mostrarTablaCitas(tablaSeleccionada) {
+                    var mapaTarjetas = {
+                        programadas: '#cardTablaProgramadas',
+                        realizadas: '#cardTablaRealizadas',
+                        reprogramadas: '#cardTablaReprogramadas',
+                        canceladas: '#cardTablaCanceladas'
+                    };
 
-                        function cargarCitasRealizadas() {
-                            $.ajax({
-                                url: 'acciones_citas.php',
-                                method: 'POST',
-                                dataType: 'json',
-                                data: { accion: 'obtenerCitasRealizadas' },
-                                success: function(response) {
-                                    if (response && response.success && Array.isArray(response.data)) {
-                                        pintarTablaCitasRealizadas(response.data);
-                                    } else {
-                                        pintarTablaCitasRealizadas([]);
-                                    }
-                                },
-                                error: function() {
-                                    pintarTablaCitasRealizadas([]);
-                                }
-                            });
+                    Object.keys(mapaTarjetas).forEach(function (clave) {
+                        if (clave === tablaSeleccionada) {
+                            $(mapaTarjetas[clave]).removeClass('d-none');
+                        } else {
+                            $(mapaTarjetas[clave]).addClass('d-none');
                         }
+                    });
 
-                        function pintarTablaCitasRealizadas(citas) {
-                            var tbody = $('#tablaCitasRealizadas tbody');
-                            tbody.empty();
-                            if (!citas.length) {
-                                tbody.append('<tr><td colspan="3" class="text-center text-muted">Sin citas realizadas.</td></tr>');
-                                return;
-                            }
-                            citas.forEach(function(cita) {
-                                var fechaFormateada = formatearFecha(cita.fecha);
-                                var row = '<tr>' +
-                                    '<td>' + cita.paciente + '</td>' +
-                                    '<td>' + fechaFormateada + '</td>' +
-                                    '<td>' + cita.hora + '</td>' +
-                                '</tr>';
-                                tbody.append(row);
-                            });
-                        }
+                    $('.btn-tabla-citas').removeClass('active');
+                    $('.btn-tabla-citas[data-tabla="' + tablaSeleccionada + '"]').addClass('active');
+                }
+
+                $(document).off('click', '.btn-tabla-citas').on('click', '.btn-tabla-citas', function () {
+                    var tabla = String($(this).data('tabla') || 'programadas');
+                    mostrarTablaCitas(tabla);
+                });
+
+                // Estado inicial: mostrar solo Programadas
+                mostrarTablaCitas('programadas');
+
                 // Handler para eliminar cita
-                $(document).off('click', '.btn-outline-danger').on('click', '.btn-outline-danger', function() {
-                    var row = $(this).closest('tr');
-                    var idCita = row.find('.btn-reprogramar').data('id');
+                $(document).off('click', '.btn-eliminar-cita').on('click', '.btn-eliminar-cita', function() {
+                    var idCita = Number($(this).data('id') || 0);
                     if (!idCita) {
-                        Swal.fire('Error', 'No se pudo identificar la cita.', 'error');
+                        iziToast.error({ title: 'Error', message: 'No se pudo identificar la cita.', position: 'topRight' });
                         return;
                     }
-                    Swal.fire({
-                        title: '¿Eliminar cita?',
-                        text: '¿Estás seguro de eliminar esta cita?',
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonText: 'Sí, eliminar',
-                        cancelButtonText: 'Cancelar'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            $.ajax({
-                                url: 'acciones_citas.php',
-                                method: 'POST',
-                                dataType: 'json',
-                                data: { accion: 'eliminarCita', id_cita: idCita },
-                                success: function(response) {
-                                    if (response && response.success) {
-                                        obtenerCitas();
-                                        Swal.fire('Eliminada', response.message || 'Cita eliminada correctamente.', 'success');
-                                    } else {
-                                        Swal.fire('Error', response.message || 'Error al eliminar la cita.', 'error');
+                    iziToast.question({
+                        title: 'Eliminar cita',
+                        message: '¿Estás seguro de eliminar esta cita?',
+                        position: 'center',
+                        timeout: false,
+                        overlay: true,
+                        closeOnOverlayClick: false,
+                        buttons: [
+                            ['<button>Sí, eliminar</button>', function (instance, toast) {
+                                instance.hide({}, toast);
+                                $.ajax({
+                                    url: 'acciones_citas.php',
+                                    method: 'POST',
+                                    dataType: 'json',
+                                    data: { accion: 'eliminarCita', id_cita: idCita },
+                                    success: function(response) {
+                                        if (response && response.success) {
+                                            obtenerCitas();
+                                            iziToast.success({ title: 'Eliminada', message: response.message || 'Cita eliminada correctamente.', position: 'topRight' });
+                                        } else {
+                                            iziToast.error({ title: 'Error', message: response.message || 'Error al eliminar la cita.', position: 'topRight' });
+                                        }
+                                    },
+                                    error: function() {
+                                        iziToast.error({ title: 'Error', message: 'Error de conexión al eliminar la cita.', position: 'topRight' });
                                     }
-                                },
-                                error: function() {
-                                    Swal.fire('Error', 'Error de conexión al eliminar la cita.', 'error');
-                                }
-                            });
-                        }
+                                });
+                            }],
+                            ['<button>Cancelar</button>', function (instance, toast) {
+                                instance.hide({}, toast);
+                            }]
+                        ]
                     });
                 });
         poblarSelectPacientes();
@@ -257,18 +319,15 @@
             var idCita = $(this).data('id');
             cargarDatosCita(idCita, function(cita) {
                 if (!cita) {
-                    Swal.fire('Error', 'No se pudo cargar la cita.', 'error');
+                    iziToast.error({ title: 'Error', message: 'No se pudo cargar la cita.', position: 'topRight' });
                     return;
                 }
                 $('#reproIdCita').val(cita.id_cita);
-                $('#reproPaciente').val(cita.id_paciente);
-                $('#id_paciente').val(cita.id_paciente);
-                $('#reproPacienteNombre').val(cita.paciente);
+                $('#reproPaciente').val(cita.paciente);
+                $('#reproPacienteHidden').val(cita.id_paciente);
                 $('#reproFecha').val(cita.fecha);
                 $('#reproHora').val(cita.hora);
                 $('#reproMotivo').val(cita.motivo);
-                $('#reproEstado').val('Reprogramada'); 
-                $('#id_usuario').val(getCookie('id_usuario'));
                 $('#modalReprogramar').modal('show');
             });
         });
@@ -278,12 +337,10 @@
             var datos = {
                 accion: 'editarCita',
                 id_cita: $('#reproIdCita').val(),
-                id_paciente: $('#reproPaciente').val(),
+                id_paciente: $('#reproPacienteHidden').val(),
                 fecha: $('#reproFecha').val(),
                 hora: $('#reproHora').val(),
-                motivo: $('#reproMotivo').val(),
-                estado: 'Reprogramada',
-                id_usuario: $('#id_usuario').val()
+                estado: 'Reprogramada'
             };
             $.ajax({
                 url: 'acciones_citas.php',
@@ -294,15 +351,21 @@
                     if (response && response.success) {
                         $('#modalReprogramar').modal('hide');
                         obtenerCitas();
-                        Swal.fire('Éxito', response.message || 'Cita reprogramada correctamente.', 'success');
+                        iziToast.success({ title: 'Éxito', message: response.message || 'Cita reprogramada correctamente.', position: 'topRight' });
                     } else {
-                        Swal.fire('Error', response.message || 'Error al reprogramar la cita.', 'error');
+                        iziToast.error({ title: 'Error', message: response.message || 'Error al reprogramar la cita.', position: 'topRight' });
                     }
                 },
                 error: function() {
-                    Swal.fire('Error', 'Error de conexión al reprogramar la cita.', 'error');
+                    iziToast.error({ title: 'Error', message: 'Error de conexión al reprogramar la cita.', position: 'topRight' });
                 }
             });
+        });
+
+        // Filtrar al escribir/cambiar los inputs de paciente y fecha
+        $(document).on('input change', '.filtro-paciente, .filtro-fecha', function() {
+            var cardId = '#' + $(this).closest('.card').attr('id');
+            filtrarTablaCitas(cardId);
         });
     });
 
@@ -338,9 +401,9 @@
                         $('#formCita')[0].reset();
                         $('#modalCita').modal('hide');
                         obtenerCitas();
-                        Swal.fire('Éxito', response.message || 'Cita registrada correctamente.', 'success');
+                        iziToast.success({ title: 'Éxito', message: response.message || 'Cita registrada correctamente.', position: 'topRight' });
                     } else {
-                        Swal.fire('Error', response.message || 'Error al guardar la cita.', 'error');
+                        iziToast.error({ title: 'Error', message: response.message || 'Error al guardar la cita.', position: 'topRight' });
                     }
                 },
             });     
@@ -362,43 +425,101 @@
                 url: 'acciones_citas.php',
                 method: 'POST',
                 dataType: 'json',
-                data: { accion: 'obtenerCitas' }
+                data: { accion: 'obtenerCitasPorEstado' }
             }).done(function (response) {
-                if (response && response.success && Array.isArray(response.data)) {
-                    pintarTablaCitas(response.data);
-                    pintarCalendarioCitas(response.data);
+                if (response && response.success && response.data) {
+                    var programadas = Array.isArray(response.data.Programada) ? response.data.Programada : [];
+                    var realizadas = Array.isArray(response.data.Realizada) ? response.data.Realizada : [];
+                    var reprogramadas = Array.isArray(response.data.Reprogramada) ? response.data.Reprogramada : [];
+                    var canceladas = Array.isArray(response.data.Cancelada) ? response.data.Cancelada : [];
+
+                    // Carga global de las 4 tablas por estado
+                    pintarTablaCitas(programadas);
+                    filtrarTablaCitas('#cardTablaProgramadas');
+                    pintarTablaCitasRealizadas(realizadas);
+                    filtrarTablaCitas('#cardTablaRealizadas');
+                    pintarTablaCitasReprogramadas(reprogramadas);
+                    filtrarTablaCitas('#cardTablaReprogramadas');
+                    pintarTablaCitasCanceladas(canceladas);
+                    filtrarTablaCitas('#cardTablaCanceladas');
+                    pintarCalendarioCitas(programadas);
                 } else {
                     pintarTablaCitas([]);
+                    pintarTablaCitasRealizadas([]);
+                    pintarTablaCitasReprogramadas([]);
+                    pintarTablaCitasCanceladas([]);
                     pintarCalendarioCitas([]);
                 }
             }).fail(function () {
                 pintarTablaCitas([]);
+                pintarTablaCitasRealizadas([]);
+                pintarTablaCitasReprogramadas([]);
+                pintarTablaCitasCanceladas([]);
                 pintarCalendarioCitas([]);
+            });
+        }
+
+        // Función global para pintar una tabla de citas por estado
+        function pintarTablaEstado(selectorTabla, citas, mensajeVacio, incluirAcciones) {
+            var tbody = $(selectorTabla + ' tbody');
+            tbody.empty();
+
+            if (!citas.length) {
+                tbody.append('<tr><td colspan="' + (incluirAcciones ? 6 : 3) + '" class="text-center text-muted">' + mensajeVacio + '</td></tr>');
+                return;
+            }
+
+            citas.forEach(function(cita) {
+                var fechaFormateada = formatearFecha(cita.fecha);
+                var row = '<tr data-paciente="' + (cita.paciente || '') + '" data-fecha="' + (cita.fecha || '') + '">' +
+                    '<td>' + cita.paciente + '</td>' +
+                    '<td>' + fechaFormateada + '</td>' +
+                    '<td>' + cita.hora + '</td>';
+
+                if (incluirAcciones) {
+                    row += '<td>' + (cita.motivo || '') + '</td>' +
+                        '<td>' +
+                            '<button class="btn btn-sm btn-outline-warning me-1 btn-reprogramar" data-id="' + cita.id_cita + '" title="Reprogramar"><i class="bi bi-calendar-event"></i></button>' +
+                            '<button class="btn btn-sm btn-outline-danger btn-eliminar-cita" data-id="' + cita.id_cita + '" title="Eliminar"><i class="bi bi-trash"></i></button>' +
+                        '</td>';
+                }
+
+                row += '</tr>';
+                tbody.append(row);
             });
         }
 
         // Función para pintar la tabla de citas
         function pintarTablaCitas(citas) {
-            var tbody = $('#tablaCitas tbody');
-            tbody.empty();
-            if (!citas.length) {
-                tbody.append('<tr><td colspan="6" class="text-center text-muted">Sin citas registradas.</td></tr>');
-                return;
-            }
-            citas.forEach(function(cita) {
-                var fechaFormateada = formatearFecha(cita.fecha);
-                var row = '<tr>' +
-                    '<td>' + cita.paciente + '</td>' +
-                    '<td>' + fechaFormateada + '</td>' +
-                    '<td>' + cita.hora + '</td>' +
-                    '<td>' + cita.motivo + '</td>' +
-                    '<td>' + cita.estado + '</td>' +
-                    '<td>' +
-                        '<button class="btn btn-sm btn-outline-warning me-1 btn-reprogramar" data-id="' + cita.id_cita + '">Reprogramar</button>' +
-                        '<button class="btn btn-sm btn-outline-danger">Eliminar</button>' +
-                    '</td>' +
-                '</tr>';
-                tbody.append(row);
+            pintarTablaEstado('#tablaCitas', citas, 'Sin citas registradas.', true);
+        }
+
+        function pintarTablaCitasRealizadas(citas) {
+            pintarTablaEstado('#tablaCitasRealizadas', citas, 'Sin citas realizadas.', false);
+        }
+
+        function pintarTablaCitasReprogramadas(citas) {
+            pintarTablaEstado('#tablaCitasReprogramadas', citas, 'Sin citas reprogramadas.', false);
+        }
+
+        function pintarTablaCitasCanceladas(citas) {
+            pintarTablaEstado('#tablaCitasCanceladas', citas, 'Sin citas canceladas.', false);
+        }
+
+        // Filtra las filas visibles de una tarjeta por paciente y/o fecha
+        function filtrarTablaCitas(cardSelector) {
+            var $card = $(cardSelector);
+            var textoPaciente = ($card.find('.filtro-paciente').val() || '').toLowerCase().trim();
+            var fechaFiltro = $card.find('.filtro-fecha').val() || '';
+            $card.find('tbody tr').each(function() {
+                var $tr = $(this);
+                // Fila de estado vacío (colspan): siempre visible
+                if ($tr.find('td[colspan]').length) { $tr.show(); return; }
+                var paciente = ($tr.data('paciente') || '').toString().toLowerCase();
+                var fecha    = ($tr.data('fecha')    || '').toString();
+                var coincidePaciente = !textoPaciente || paciente.indexOf(textoPaciente) !== -1;
+                var coincideFecha    = !fechaFiltro   || fecha === fechaFiltro;
+                $tr.toggle(coincidePaciente && coincideFecha);
             });
         }
 
@@ -444,12 +565,6 @@
             });
         }
 
-        // Función para obtener el valor de una cookie
-        function getCookie(name) {
-            var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-            if (match) return match[2];
-            return '';
-        }
 </script>
 </body>
 </html>
