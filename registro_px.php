@@ -50,8 +50,8 @@
                                             <input type="text" class="form-control" id="nombre" name="nombre" placeholder="Nombre" required>
                                         </div>
                                         <div class="col-12 col-md-6">
-                                            <label for="apellido" class="form-label">Apellido</label>
-                                            <input type="text" class="form-control" id="apellido" name="apellido" placeholder="Apellido" required>
+                                            <label for="apellido" class="form-label">Apellidos</label>
+                                            <input type="text" class="form-control" id="apellido" name="apellido" placeholder="Apellidos" required>
                                         </div>
 
                                         <div class="col-12 col-md-6">

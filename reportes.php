@@ -6,6 +6,7 @@
     <title>Reportes - FISIOMAR</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/css/iziToast.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
 <div id="wrapper" class="d-flex min-vh-100">
@@ -121,6 +122,41 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Modal de visualización de reportes -->
+                <div class="modal fade" id="modalHistorialClinico" tabindex="-1" aria-labelledby="modalHistorialClinicoLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <div>
+                                    <h2 class="modal-title h5 mb-0" id="modalHistorialClinicoLabel">Reporte</h2>
+                                    <small class="text-muted">Paciente: <span id="historialNombrePaciente"></span></small>
+                                </div>
+                                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                            </div>
+                            <div class="modal-body">
+                                <!-- Renderizado: tabla responsiva dinámica según tipo de reporte -->
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0" id="tablaHistorialClinico">
+                                        <thead class="table-light" id="encabezadoReporteDinamico"></thead>
+                                        <tbody>
+                                            <tr><td colspan="5" class="text-center text-muted py-3">Cargando...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-danger" id="btnExportarPDF">
+                                    <i class="bi bi-file-earmark-pdf me-1"></i>Exportar PDF
+                                </button>
+                                <button type="button" class="btn btn-outline-success" id="btnExportarExcel">
+                                    <i class="bi bi-file-earmark-excel me-1"></i>Exportar Excel
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -129,6 +165,10 @@
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="funcionesJS.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/js/iziToast.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
     $(function () {
         // Encabezado: inicialización del modal
@@ -137,6 +177,8 @@
         var modalReporte = new bootstrap.Modal(modalReporteEl);
         var modalDetalleEl = document.getElementById('modalDetalleReporte');
         var modalDetalle = new bootstrap.Modal(modalDetalleEl);
+        var modalHistorialEl = document.getElementById('modalHistorialClinico');
+        var modalHistorial = new bootstrap.Modal(modalHistorialEl);
 
         // Tabla: utilidades de render
         function escaparHtml(texto) {
@@ -197,8 +239,7 @@
                         '<td>' + escaparHtml(reporte.tipo || '') + '</td>' +
                         '<td>' + escaparHtml(formatearFecha(reporte.fecha_generado || '')) + '</td>' +
                         '<td class="text-nowrap">' +
-                            '<button type="button" class="btn btn-sm btn-outline-primary btn-ver-reporte me-1" data-id="' + Number(reporte.id_reporte || 0) + '">Ver</button>' +
-                            '<button type="button" class="btn btn-sm btn-outline-success btn-descargar-reporte me-1" data-id="' + Number(reporte.id_reporte || 0) + '">Descargar</button>' +
+                            '<button type="button" class="btn btn-sm btn-outline-primary btn-ver-reporte me-1" data-id="' + Number(reporte.id_reporte || 0) + '" data-tipo="' + escaparHtml(reporte.tipo || '') + '" data-id-paciente="' + Number(reporte.id_paciente || 0) + '" data-paciente="' + escaparHtml(reporte.paciente || '') + '">Ver</button>' +
                             '<button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-reporte" data-id="' + Number(reporte.id_reporte || 0) + '">Eliminar</button>' +
                         '</td>' +
                     '</tr>';
@@ -265,49 +306,280 @@
 
             // Inserción en BD: validación de campos obligatorios
             if (!paciente || !tipo) {
-                alert('Paciente y tipo de reporte son obligatorios.');
+                iziToast.warning({ title: 'Campos requeridos', message: 'Paciente y tipo de reporte son obligatorios.', position: 'topRight' });
                 return;
             }
 
             if (fechaInicio && fechaFin && fechaInicio > fechaFin) {
-                alert('La fecha de inicio no puede ser mayor a la fecha de fin.');
+                iziToast.warning({ title: 'Fechas inválidas', message: 'La fecha de inicio no puede ser mayor a la fecha de fin.', position: 'topRight' });
                 return;
             }
 
-            // Inserción en BD: guardar reporte
+            // Toast de procesamiento: visible durante validación y guardado
+            iziToast.info({
+                id: 'toastProcesando',
+                title: 'Procesando',
+                message: 'Validando disponibilidad de datos...',
+                position: 'topRight',
+                timeout: false,
+                close: false,
+                progressBar: false
+            });
+
+            // Validar que existan registros antes de insertar el reporte
             $.ajax({
                 url: 'acciones_reportes.php',
                 method: 'POST',
                 dataType: 'json',
                 data: {
-                    accion: 'guardarReporte',
+                    accion: 'validarDatosReporte',
                     id_paciente: paciente,
-                    tipo: tipo,
-                    fecha_inicio: fechaInicio,
-                    fecha_fin: fechaFin
+                    tipo: tipo
                 }
-            }).done(function (response) {
-                if (!response || !response.success) {
-                    alert((response && response.message) ? response.message : 'No se pudo generar el reporte.');
+            }).done(function (validacion) {
+                var $toast = document.getElementById('toastProcesando');
+
+                if (!validacion || !validacion.success) {
+                    iziToast.hide({}, $toast);
+                    iziToast.error({ title: 'Error', message: (validacion && validacion.message) ? validacion.message : 'No se pudo validar el reporte.', position: 'topRight' });
                     return;
                 }
 
-                modalReporte.hide();
-                $('#formNuevoReporte')[0].reset();
-                cargarReportes();
+                if (!validacion.tiene_datos) {
+                    iziToast.hide({}, $toast);
+                    iziToast.warning({ title: 'Sin datos', message: 'El paciente no tiene registros para el tipo de reporte seleccionado.', position: 'topRight' });
+                    return;
+                }
+
+                // Hay datos: proceder a insertar el reporte
+                $.ajax({
+                    url: 'acciones_reportes.php',
+                    method: 'POST',
+                    dataType: 'json',
+                    data: {
+                        accion: 'guardarReporte',
+                        id_paciente: paciente,
+                        tipo: tipo,
+                        fecha_inicio: fechaInicio,
+                        fecha_fin: fechaFin
+                    }
+                }).done(function (response) {
+                    iziToast.hide({}, document.getElementById('toastProcesando'));
+                    if (!response || !response.success) {
+                        iziToast.error({ title: 'Error', message: (response && response.message) ? response.message : 'No se pudo generar el reporte.', position: 'topRight' });
+                        return;
+                    }
+                    modalReporte.hide();
+                    $('#formNuevoReporte')[0].reset();
+                    iziToast.success({ title: 'Listo', message: 'Reporte generado correctamente.', position: 'topRight' });
+                    cargarReportes();
+                }).fail(function () {
+                    iziToast.hide({}, document.getElementById('toastProcesando'));
+                    iziToast.error({ title: 'Error de conexión', message: 'Error de conexión al generar el reporte.', position: 'topRight' });
+                });
             }).fail(function () {
-                alert('Error de conexión al generar el reporte.');
+                iziToast.hide({}, document.getElementById('toastProcesando'));
+                iziToast.error({ title: 'Error de conexión', message: 'Error de conexión al validar el reporte.', position: 'topRight' });
             });
+        });
+
+        // Configuración reusable para los 3 tipos de reporte
+        var configuracionReportes = {
+            'Historial Completo': {
+                columnas: [
+                    { key: 'diagnostico', label: 'Diagnóstico' },
+                    { key: 'antecedentes', label: 'Antecedentes' },
+                    { key: 'exploracion', label: 'Exploración' },
+                    { key: 'tratamiento', label: 'Tratamiento' },
+                    { key: 'fecha_registro', label: 'Fecha de registro', formatter: formatearFecha, nowrap: true }
+                ]
+            },
+            'Sesiones Realizadas': {
+                columnas: [
+                    { key: 'fecha_cita', label: 'Fecha de cita', formatter: formatearFecha, nowrap: true },
+                    { key: 'hora', label: 'Hora', nowrap: true },
+                    { key: 'tipo_tratamiento', label: 'Tipo de tratamiento' },
+                    { key: 'notas', label: 'Notas' },
+                    { key: 'fecha_registro', label: 'Fecha de registro', formatter: formatearFecha, nowrap: true }
+                ]
+            },
+            'Resumen de Tratamientos': {
+                columnas: [
+                    { key: 'tipo_tratamiento', label: 'Tipo de tratamiento' },
+                    { key: 'total_sesiones', label: 'Total de sesiones', nowrap: true },
+                    { key: 'ultima_sesion', label: 'Última sesión', formatter: formatearFecha, nowrap: true }
+                ]
+            }
+        };
+
+        // Funciones globales de reportes para reutilización desde cualquier tipo o evento
+        window.Reportes = {
+            abrirReporte: function (tipo, idPaciente, nombrePaciente) {
+                var config = configuracionReportes[tipo] || null;
+                if (!config) {
+                    iziToast.error({ title: 'Error', message: 'Tipo de reporte no soportado.', position: 'topRight' });
+                    return;
+                }
+
+                if (!idPaciente) {
+                    iziToast.error({ title: 'Error', message: 'No se pudo identificar el paciente.', position: 'topRight' });
+                    return;
+                }
+
+                $('#modalHistorialClinicoLabel').text(tipo);
+                $('#historialNombrePaciente').text(nombrePaciente || '-');
+
+                // Estado inicial de carga y apertura de modal
+                this.pintarReporte(tipo, null);
+                modalHistorial.show();
+
+                $.ajax({
+                    url: 'acciones_reportes.php',
+                    method: 'POST',
+                    dataType: 'json',
+                    data: {
+                        accion: 'obtenerDatosReporte',
+                        id_paciente: idPaciente,
+                        tipo: tipo
+                    }
+                }).done(function (response) {
+                    if (!response || !response.success) {
+                        window.Reportes.pintarReporte(tipo, []);
+                        return;
+                    }
+
+                    if (response.paciente) {
+                        $('#historialNombrePaciente').text(response.paciente);
+                    }
+
+                    window.Reportes.pintarReporte(tipo, response.data || []);
+                }).fail(function () {
+                    window.Reportes.pintarReporte(tipo, []);
+                });
+            },
+
+            pintarReporte: function (tipo, registros) {
+                var config = configuracionReportes[tipo] || null;
+                var columnas = config ? config.columnas : [];
+                var $thead = $('#encabezadoReporteDinamico');
+                var $tbody = $('#tablaHistorialClinico tbody');
+
+                $thead.empty();
+                $tbody.empty();
+
+                if (!columnas.length) {
+                    $thead.append('<tr><th>Sin configuración</th></tr>');
+                    $tbody.append('<tr><td class="text-center text-muted py-3">No hay columnas configuradas para este reporte.</td></tr>');
+                    return;
+                }
+
+                var encabezado = '<tr>';
+                columnas.forEach(function (col) {
+                    encabezado += '<th' + (col.nowrap ? ' class="text-nowrap"' : '') + '>' + escaparHtml(col.label) + '</th>';
+                });
+                encabezado += '</tr>';
+                $thead.append(encabezado);
+
+                if (registros === null) {
+                    $tbody.append('<tr><td colspan="' + columnas.length + '" class="text-center text-muted py-3">Cargando...</td></tr>');
+                    return;
+                }
+
+                if (!registros.length) {
+                    $tbody.append('<tr><td colspan="' + columnas.length + '" class="text-center text-muted py-3">Sin datos disponibles para este reporte.</td></tr>');
+                    return;
+                }
+
+                registros.forEach(function (reg) {
+                    var fila = '<tr>';
+                    columnas.forEach(function (col) {
+                        var valor = typeof reg[col.key] === 'undefined' || reg[col.key] === null ? '' : reg[col.key];
+                        if (typeof col.formatter === 'function') {
+                            valor = col.formatter(String(valor));
+                        }
+                        fila += '<td' + (col.nowrap ? ' class="text-nowrap"' : '') + '>' + escaparHtml(String(valor)) + '</td>';
+                    });
+                    fila += '</tr>';
+                    $tbody.append(fila);
+                });
+            }
+        };
+
+        // Extrae encabezados y filas visibles de la tabla del reporte abierto
+        function extraerDatosTabla() {
+            var columnas = [];
+            $('#encabezadoReporteDinamico th').each(function () {
+                columnas.push($(this).text().trim());
+            });
+            var filas = [];
+            $('#tablaHistorialClinico tbody tr').each(function () {
+                var $celdas = $(this).find('td');
+                // Omitir filas de estado (colspan): cargando / sin datos
+                if ($celdas.length === 1 && $celdas.first().attr('colspan')) return;
+                var fila = [];
+                $celdas.each(function () { fila.push($(this).text().trim()); });
+                filas.push(fila);
+            });
+            return { columnas: columnas, filas: filas };
+        }
+
+        $('#btnExportarPDF').on('click', function () {
+            var datos = extraerDatosTabla();
+            if (!datos.filas.length) {
+                iziToast.warning({ title: 'Sin datos', message: 'No hay datos para exportar.', position: 'topRight' });
+                return;
+            }
+            var titulo   = $('#modalHistorialClinicoLabel').text();
+            var paciente = $('#historialNombrePaciente').text();
+            var doc = new window.jspdf.jsPDF({ orientation: 'landscape' });
+            doc.setFontSize(13);
+            doc.text(titulo, 14, 15);
+            doc.setFontSize(9);
+            doc.text('Paciente: ' + paciente, 14, 22);
+            doc.autoTable({
+                head: [datos.columnas],
+                body: datos.filas,
+                startY: 28,
+                styles: { fontSize: 8 },
+                headStyles: { fillColor: [52, 144, 220] }
+            });
+            doc.save(titulo + ' - ' + paciente + '.pdf');
+        });
+
+        $('#btnExportarExcel').on('click', function () {
+            var datos = extraerDatosTabla();
+            if (!datos.filas.length) {
+                iziToast.warning({ title: 'Sin datos', message: 'No hay datos para exportar.', position: 'topRight' });
+                return;
+            }
+            var titulo   = $('#modalHistorialClinicoLabel').text();
+            var paciente = $('#historialNombrePaciente').text();
+            var aoa = [datos.columnas].concat(datos.filas);
+            var ws = XLSX.utils.aoa_to_sheet(aoa);
+            var wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, titulo.substring(0, 31));
+            XLSX.writeFile(wb, titulo + ' - ' + paciente + '.xlsx');
         });
 
         // Tabla: acciones básicas
         $(document).on('click', '.btn-ver-reporte', function () {
-            var idReporte = Number($(this).data('id') || 0);
+            var idReporte  = Number($(this).data('id') || 0);
+            var tipo       = String($(this).data('tipo') || '');
+            var idPaciente = Number($(this).data('id-paciente') || 0);
+            var paciente   = String($(this).data('paciente') || '');
+
             if (!idReporte) {
-                alert('No se pudo identificar el reporte.');
+                iziToast.error({ title: 'Error', message: 'No se pudo identificar el reporte.', position: 'topRight' });
                 return;
             }
 
+            // Reutiliza la misma apertura global para los 3 tipos de reporte
+            if (configuracionReportes[tipo]) {
+                window.Reportes.abrirReporte(tipo, idPaciente, paciente);
+                return;
+            }
+
+            // Otros tipos: modal de detalle genérico
             $.ajax({
                 url: 'acciones_reportes.php',
                 method: 'POST',
@@ -318,7 +590,7 @@
                 }
             }).done(function (response) {
                 if (!response || !response.success || !response.data) {
-                    alert((response && response.message) ? response.message : 'No se pudo obtener el detalle del reporte.');
+                    iziToast.error({ title: 'Error', message: (response && response.message) ? response.message : 'No se pudo obtener el detalle del reporte.', position: 'topRight' });
                     return;
                 }
 
@@ -330,14 +602,14 @@
                 $('#detalleCorreo').text(detalle.correo || 'N/A');
                 modalDetalle.show();
             }).fail(function () {
-                alert('Error de conexión al obtener el detalle del reporte.');
+                iziToast.error({ title: 'Error de conexión', message: 'Error de conexión al obtener el detalle del reporte.', position: 'topRight' });
             });
         });
 
         $(document).on('click', '.btn-descargar-reporte', function () {
             var idReporte = Number($(this).data('id') || 0);
             if (!idReporte) {
-                alert('No se pudo identificar el reporte para descarga.');
+                iziToast.error({ title: 'Error', message: 'No se pudo identificar el reporte para descarga.', position: 'topRight' });
                 return;
             }
 
@@ -347,31 +619,43 @@
         $(document).on('click', '.btn-eliminar-reporte', function () {
             var idReporte = Number($(this).data('id') || 0);
             if (!idReporte) {
-                alert('No se pudo identificar el reporte a eliminar.');
+                iziToast.error({ title: 'Error', message: 'No se pudo identificar el reporte a eliminar.', position: 'topRight' });
                 return;
             }
 
-            if (!confirm('¿Deseas eliminar este reporte?')) {
-                return;
-            }
-
-            $.ajax({
-                url: 'acciones_reportes.php',
-                method: 'POST',
-                dataType: 'json',
-                data: {
-                    accion: 'eliminarReporte',
-                    id_reporte: idReporte
-                }
-            }).done(function (response) {
-                if (!response || !response.success) {
-                    alert((response && response.message) ? response.message : 'No se pudo eliminar el reporte.');
-                    return;
-                }
-
-                cargarReportes();
-            }).fail(function () {
-                alert('Error de conexión al eliminar el reporte.');
+            iziToast.question({
+                title: 'Eliminar reporte',
+                message: '¿Deseas eliminar este reporte?',
+                position: 'center',
+                timeout: false,
+                overlay: true,
+                closeOnOverlayClick: false,
+                buttons: [
+                    ['<button>Sí, eliminar</button>', function (instance, toast) {
+                        instance.hide({}, toast);
+                        $.ajax({
+                            url: 'acciones_reportes.php',
+                            method: 'POST',
+                            dataType: 'json',
+                            data: {
+                                accion: 'eliminarReporte',
+                                id_reporte: idReporte
+                            }
+                        }).done(function (response) {
+                            if (!response || !response.success) {
+                                iziToast.error({ title: 'Error', message: (response && response.message) ? response.message : 'No se pudo eliminar el reporte.', position: 'topRight' });
+                                return;
+                            }
+                            iziToast.success({ title: 'Listo', message: 'Reporte eliminado correctamente.', position: 'topRight' });
+                            cargarReportes();
+                        }).fail(function () {
+                            iziToast.error({ title: 'Error de conexión', message: 'Error de conexión al eliminar el reporte.', position: 'topRight' });
+                        });
+                    }],
+                    ['<button>Cancelar</button>', function (instance, toast) {
+                        instance.hide({}, toast);
+                    }]
+                ]
             });
         });
     });

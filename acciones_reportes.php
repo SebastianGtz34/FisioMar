@@ -19,6 +19,169 @@ if (!$conn instanceof mysqli) {
     exit;
 }
 
+// VALIDAR QUE EXISTAN DATOS PARA EL TIPO DE REPORTE ANTES DE INSERTARLO
+if ($accion === 'validarDatosReporte') {
+    if ($id_paciente <= 0 || $tipo === '') {
+        echo json_encode([
+            'success' => false,
+            'status'  => 'error',
+            'message' => 'Paciente y tipo de reporte son obligatorios.'
+        ]);
+        exit;
+    }
+
+    // Consulta COUNT según tipo para verificar existencia de registros
+    if ($tipo === 'Historial Completo') {
+        $sql = "SELECT COUNT(*) AS total FROM datos_clinicos WHERE id_paciente = ?";
+    } elseif ($tipo === 'Sesiones Realizadas' || $tipo === 'Resumen de Tratamientos') {
+        $sql = "SELECT COUNT(*) AS total
+                FROM citas c
+                INNER JOIN sesiones s ON s.id_cita = c.id_cita
+                WHERE c.id_paciente = ?";
+    } else {
+        echo json_encode([
+            'success' => false,
+            'status'  => 'error',
+            'message' => 'Tipo de reporte no soportado.'
+        ]);
+        exit;
+    }
+
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        echo json_encode([
+            'success' => false,
+            'status'  => 'error',
+            'message' => 'Error al preparar validaci\u00f3n: ' . $conn->error
+        ]);
+        exit;
+    }
+
+    $stmt->bind_param('i', $id_paciente);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result ? $result->fetch_assoc() : null;
+    $stmt->close();
+
+    echo json_encode([
+        'success'     => true,
+        'status'      => 'success',
+        'tiene_datos' => $row && intval($row['total']) > 0
+    ]);
+    exit;
+}
+
+// OBTENER DATOS DETALLADOS DE REPORTE POR TIPO
+if ($accion === 'obtenerDatosReporte') {
+    if ($id_paciente <= 0 || $tipo === '') {
+        echo json_encode([
+            'success' => false,
+            'status' => 'error',
+            'message' => 'Paciente y tipo de reporte son obligatorios.'
+        ]);
+        exit;
+    }
+
+    $sqlNombre = "SELECT CONCAT(nombre, ' ', apellido) AS paciente FROM pacientes WHERE id_paciente = ? LIMIT 1";
+    $stmtNombre = $conn->prepare($sqlNombre);
+    if (!$stmtNombre) {
+        echo json_encode([
+            'success' => false,
+            'status' => 'error',
+            'message' => 'Error al preparar consulta de paciente: ' . $conn->error
+        ]);
+        exit;
+    }
+
+    $stmtNombre->bind_param('i', $id_paciente);
+    $stmtNombre->execute();
+    $resultNombre = $stmtNombre->get_result();
+    $pacienteRow = $resultNombre ? $resultNombre->fetch_assoc() : null;
+    $stmtNombre->close();
+
+    if (!$pacienteRow) {
+        echo json_encode([
+            'success' => false,
+            'status' => 'error',
+            'message' => 'Paciente no encontrado.'
+        ]);
+        exit;
+    }
+
+    $paciente = $pacienteRow['paciente'];
+    $registros = [];
+
+    // Consulta SQL según tipo de reporte
+    if ($tipo === 'Historial Completo') {
+        $sql = "SELECT
+                    dc.diagnostico,
+                    dc.antecedentes,
+                    dc.exploracion,
+                    dc.tratamiento,
+                    dc.fecha_registro
+                FROM datos_clinicos dc
+                WHERE dc.id_paciente = ?
+                ORDER BY dc.fecha_registro DESC";
+    } elseif ($tipo === 'Sesiones Realizadas') {
+        $sql = "SELECT
+                    c.fecha AS fecha_cita,
+                    c.hora,
+                    s.tipo_tratamiento,
+                    s.notas,
+                    s.fecha AS fecha_registro
+                FROM citas c
+                INNER JOIN sesiones s ON s.id_cita = c.id_cita
+                WHERE c.id_paciente = ?
+                ORDER BY c.fecha DESC, c.hora DESC";
+    } elseif ($tipo === 'Resumen de Tratamientos') {
+        $sql = "SELECT
+                    s.tipo_tratamiento,
+                    COUNT(*) AS total_sesiones,
+                    MAX(s.fecha) AS ultima_sesion
+                FROM citas c
+                INNER JOIN sesiones s ON s.id_cita = c.id_cita
+                WHERE c.id_paciente = ?
+                GROUP BY s.tipo_tratamiento
+                ORDER BY total_sesiones DESC, s.tipo_tratamiento ASC";
+    } else {
+        echo json_encode([
+            'success' => false,
+            'status' => 'error',
+            'message' => 'Tipo de reporte no soportado.'
+        ]);
+        exit;
+    }
+
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        echo json_encode([
+            'success' => false,
+            'status' => 'error',
+            'message' => 'Error al preparar consulta del reporte: ' . $conn->error
+        ]);
+        exit;
+    }
+
+    $stmt->bind_param('i', $id_paciente);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    while ($row = $result->fetch_assoc()) {
+        $registros[] = $row;
+    }
+
+    $stmt->close();
+
+    echo json_encode([
+        'success' => true,
+        'status' => 'success',
+        'paciente' => $paciente,
+        'tipo' => $tipo,
+        'data' => $registros
+    ]);
+    exit;
+}
+
 // LISTAR REPORTES CON DATOS DE PACIENTE
 if ($accion === 'obtenerReportes') {
     $sql = "SELECT

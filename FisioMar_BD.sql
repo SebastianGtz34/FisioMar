@@ -20,12 +20,8 @@ CREATE TABLE pacientes (
     antecedentes TEXT,
     folio VARCHAR(100),
     estatus VARCHAR(50),
-    fecha_cita DATE,
-    hora_cita TIME,
     contacto_emergencia VARCHAR(120),
     telefono_emergencia VARCHAR(20),
-    usuario_registro VARCHAR(50),
-    archivo_origen VARCHAR(120),
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -47,6 +43,20 @@ CREATE TABLE sesiones (
     tipo_tratamiento VARCHAR(100),
     notas TEXT,
     fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_cita) REFERENCES citas(id_cita)
+);
+
+-- Tabla de datos clínicos (un registro por consulta/sesión del paciente)
+CREATE TABLE datos_clinicos (
+    id_dato INT AUTO_INCREMENT PRIMARY KEY,
+    id_paciente INT NOT NULL,
+    diagnostico TEXT,
+    antecedentes TEXT,
+    exploracion TEXT,
+    tratamiento TEXT,
+    id_cita INT,
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_paciente) REFERENCES pacientes(id_paciente),
     FOREIGN KEY (id_cita) REFERENCES citas(id_cita)
 );
 
