@@ -340,6 +340,7 @@
                 id_paciente: $('#reproPacienteHidden').val(),
                 fecha: $('#reproFecha').val(),
                 hora: $('#reproHora').val(),
+                motivo: $('#reproMotivo').val(),
                 estado: 'Reprogramada'
             };
             $.ajax({

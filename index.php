@@ -77,10 +77,6 @@
                                         </div>
                                         <form id="formBitacoraCita">
                                             <div class="modal-body">
-                                                <div class="alert alert-info py-2 mb-3">
-                                                    Confirma que la cita terminó y registra la bitácora clínica del paciente.
-                                                </div>
-
                                                 <div class="mb-3">
                                                     <label class="form-label">Paciente</label>
                                                     <input type="text" class="form-control" id="bitacoraPaciente" disabled>

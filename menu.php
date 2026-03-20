@@ -18,9 +18,6 @@
         <a class="nav-link text-white" href="reportes.php" data-page="reportes.php">
             <i class="bi bi-bar-chart-fill me-2"></i>Reportes
         </a>
-        <a class="nav-link text-white" href="archivos.php" data-page="archivos.php">
-            <i class="bi bi-folder-fill me-2"></i>Archivos
-        </a>
     </nav>
 </div>
 <style>

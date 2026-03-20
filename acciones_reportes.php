@@ -36,8 +36,8 @@ if ($accion === 'validarDatosReporte') {
     } elseif ($tipo === 'Sesiones Realizadas' || $tipo === 'Resumen de Tratamientos') {
         $sql = "SELECT COUNT(*) AS total
                 FROM citas c
-                INNER JOIN sesiones s ON s.id_cita = c.id_cita
-                WHERE c.id_paciente = ?";
+                WHERE c.id_paciente = ?
+                  AND c.estado = 'Realizada'";
     } else {
         echo json_encode([
             'success' => false,
@@ -126,23 +126,25 @@ if ($accion === 'obtenerDatosReporte') {
         $sql = "SELECT
                     c.fecha AS fecha_cita,
                     c.hora,
-                    s.tipo_tratamiento,
-                    s.notas,
-                    s.fecha AS fecha_registro
+                    COALESCE(NULLIF(dc.tratamiento, ''), 'Sin tratamiento registrado') AS tipo_tratamiento,
+                    COALESCE(NULLIF(dc.exploracion, ''), 'Sin notas registradas') AS notas,
+                    COALESCE(dc.fecha_registro, TIMESTAMP(c.fecha, c.hora)) AS fecha_registro
                 FROM citas c
-                INNER JOIN sesiones s ON s.id_cita = c.id_cita
+                LEFT JOIN datos_clinicos dc ON dc.id_cita = c.id_cita
                 WHERE c.id_paciente = ?
+                  AND c.estado = 'Realizada'
                 ORDER BY c.fecha DESC, c.hora DESC";
     } elseif ($tipo === 'Resumen de Tratamientos') {
         $sql = "SELECT
-                    s.tipo_tratamiento,
+                    COALESCE(NULLIF(dc.tratamiento, ''), 'Sin tratamiento registrado') AS tipo_tratamiento,
                     COUNT(*) AS total_sesiones,
-                    MAX(s.fecha) AS ultima_sesion
+                    MAX(c.fecha) AS ultima_sesion
                 FROM citas c
-                INNER JOIN sesiones s ON s.id_cita = c.id_cita
+                LEFT JOIN datos_clinicos dc ON dc.id_cita = c.id_cita
                 WHERE c.id_paciente = ?
-                GROUP BY s.tipo_tratamiento
-                ORDER BY total_sesiones DESC, s.tipo_tratamiento ASC";
+                  AND c.estado = 'Realizada'
+                GROUP BY COALESCE(NULLIF(dc.tratamiento, ''), 'Sin tratamiento registrado')
+                ORDER BY total_sesiones DESC, tipo_tratamiento ASC";
     } else {
         echo json_encode([
             'success' => false,

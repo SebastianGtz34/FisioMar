@@ -32,7 +32,7 @@ CREATE TABLE citas (
     fecha DATE NOT NULL,
     hora TIME NOT NULL,
     motivo VARCHAR(200),
-    estado ENUM('Programada','Realizada','Cancelada') DEFAULT 'Programada',
+    estado ENUM('Programada','Realizada','Reprogramada','Cancelada') DEFAULT 'Programada',
     FOREIGN KEY (id_paciente) REFERENCES pacientes(id_paciente)
 );
 
