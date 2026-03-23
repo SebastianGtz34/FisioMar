@@ -112,6 +112,107 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Modal: detalle de paciente -->
+                            <div class="modal fade" id="modalDetallePaciente" tabindex="-1" aria-labelledby="modalDetallePacienteLabel" aria-hidden="true">
+                                <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h2 class="modal-title h5" id="modalDetallePacienteLabel">Detalle de Paciente</h2>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                        </div>
+                                        <div class="modal-body" id="detallePacienteBody">
+                                            <p class="text-muted mb-0">Sin información disponible.</p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-outline-primary" id="btnEditarPacienteDesdeDetalle">
+                                                <i class="bi bi-pencil-square me-1"></i>Modificar
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Modal: editar paciente -->
+                            <div class="modal fade" id="modalEditarPaciente" tabindex="-1" aria-labelledby="modalEditarPacienteLabel" aria-hidden="true">
+                                <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h2 class="modal-title h5" id="modalEditarPacienteLabel">Modificar Paciente</h2>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <form id="formEditarPaciente">
+                                                <input type="hidden" id="editarIdPaciente" name="id_paciente">
+
+                                                <div class="row g-3">
+                                                    <div class="col-12 col-md-6">
+                                                        <label for="editarNombre" class="form-label">Nombre</label>
+                                                        <input type="text" class="form-control" id="editarNombre" name="nombre" required>
+                                                    </div>
+                                                    <div class="col-12 col-md-6">
+                                                        <label for="editarApellido" class="form-label">Apellido</label>
+                                                        <input type="text" class="form-control" id="editarApellido" name="apellido" required>
+                                                    </div>
+                                                    <div class="col-12 col-md-6">
+                                                        <label for="editarFechaNacimiento" class="form-label">Fecha de nacimiento</label>
+                                                        <input type="date" class="form-control" id="editarFechaNacimiento" name="fechaNacimiento" required>
+                                                    </div>
+                                                    <div class="col-12 col-md-6">
+                                                        <label for="editarTelefono" class="form-label">Teléfono</label>
+                                                        <input type="text" class="form-control" id="editarTelefono" name="telefono" required>
+                                                    </div>
+                                                    <div class="col-12 col-md-6">
+                                                        <label for="editarCorreo" class="form-label">Correo</label>
+                                                        <input type="email" class="form-control" id="editarCorreo" name="correo" required>
+                                                    </div>
+                                                    <div class="col-12 col-md-6">
+                                                        <label for="editarOcupacion" class="form-label">Ocupación</label>
+                                                        <input type="text" class="form-control" id="editarOcupacion" name="ocupacion">
+                                                    </div>
+                                                    <div class="col-12 col-md-6">
+                                                        <label for="editarEstadoCivil" class="form-label">Estado civil</label>
+                                                        <input type="text" class="form-control" id="editarEstadoCivil" name="estadoCivil">
+                                                    </div>
+                                                    <div class="col-12 col-md-6">
+                                                        <label for="editarSeguroMedico" class="form-label">Seguro médico</label>
+                                                        <input type="text" class="form-control" id="editarSeguroMedico" name="seguroMedico">
+                                                    </div>
+                                                    <div class="col-12 col-md-6">
+                                                        <label for="editarSexo" class="form-label">Sexo</label>
+                                                        <input type="text" class="form-control" id="editarSexo" name="sexo">
+                                                    </div>
+                                                    <div class="col-12 col-md-6">
+                                                        <label for="editarFolio" class="form-label">Folio</label>
+                                                        <input type="text" class="form-control" id="editarFolio" name="folio">
+                                                    </div>
+                                                    <div class="col-12 col-md-6">
+                                                        <label for="editarContactoEmergencia" class="form-label">Contacto emergencia</label>
+                                                        <input type="text" class="form-control" id="editarContactoEmergencia" name="contactoEmergencia">
+                                                    </div>
+                                                    <div class="col-12 col-md-6">
+                                                        <label for="editarTelefonoEmergencia" class="form-label">Teléfono emergencia</label>
+                                                        <input type="text" class="form-control" id="editarTelefonoEmergencia" name="telefonoEmergencia">
+                                                    </div>
+                                                    <div class="col-12 col-md-6">
+                                                        <label for="editarDiagnostico" class="form-label">Diagnóstico</label>
+                                                        <textarea class="form-control" id="editarDiagnostico" name="diagnostico" rows="3"></textarea>
+                                                    </div>
+                                                    <div class="col-12 col-md-6">
+                                                        <label for="editarAntecedentes" class="form-label">Antecedentes</label>
+                                                        <textarea class="form-control" id="editarAntecedentes" name="antecedentes" rows="3"></textarea>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" class="btn btn-outline-success" form="formEditarPaciente">Guardar cambios</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             <br>
                             <!-- TABLA DE PACIENTES -->
                             <div class="card mb-4">
@@ -124,12 +225,12 @@
                                         <tr>
                                             <th>Nombre</th>
                                             <th>Teléfono</th>
-                                            <th>Prox. Cita</th>
+                                            <th>Acciones</th>
                                         </tr>
                                         </thead>
-                                        <tbody>
+                                        <tbody id="tbodyPacientesActivos">
                                         <tr id="rowSinPacientes">
-                                            <td colspan="4" class="text-center text-muted">Sin pacientes activos.</td>
+                                            <td colspan="3" class="text-center text-muted">Sin pacientes activos.</td>
                                         </tr>
                                         </tbody>
                                     </table>
@@ -140,19 +241,45 @@
                 </section>
             </div>
         </div>
+        <footer class = "sticky-footer bg-white">
+            <div class = "container my-auto">
+                <div class = "copyright text-center my-auto">
+                    <span>Copyright &copy; SGR <?php echo date("Y"); ?></span>
+                </div>
+            </div>
+        </footer>
     </div>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
-<script src="funcionesJS.js"></script>
+<script src="funcionesJS.js?v=<?php echo filemtime('funcionesJS.js'); ?>"></script>
 <script src="https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/js/iziToast.min.js"></script>
 
 <script>
     $(function () {
         var modalBitacoraEl = document.getElementById('modalBitacoraCita');
         var modalBitacora = new bootstrap.Modal(modalBitacoraEl);
+        var modalDetallePacienteEl = document.getElementById('modalDetallePaciente');
+        var modalDetallePaciente = new bootstrap.Modal(modalDetallePacienteEl);
+        var modalEditarPacienteEl = document.getElementById('modalEditarPaciente');
+        var modalEditarPaciente = new bootstrap.Modal(modalEditarPacienteEl);
+
+        iniciarEventosDetallePacientes(modalDetallePaciente, '#detallePacienteBody');
+        iniciarEventosEditarPacientes(modalDetallePaciente, modalEditarPaciente, '#formEditarPaciente', function () {
+            recargarPacientesActivos();
+        });
+        iniciarEventosBajaPacientes(function () {
+            recargarPacientesActivos();
+        });
+
+        function recargarPacientesActivos() {
+            CargarPX(function(pacientes) {
+                pintarTablaPacientesActivos(pacientes, '#tbodyPacientesActivos');
+                pintarMetricas(pacientes);
+            });
+        }
 
         function recargarPanelInicio() {
             CargarCitasHoy(function(citasHoy) {
@@ -166,10 +293,7 @@
         }
 
         // Cargar y mostrar pacientes reales al iniciar
-        CargarPX(function(pacientes) {
-            pintarTablaPacientes(pacientes);
-            pintarMetricas(pacientes);
-        });
+        recargarPacientesActivos();
 
         // Cargar y mostrar citas de hoy al iniciar
         recargarPanelInicio();
@@ -272,41 +396,8 @@
             });
         });
 
-        function pintarTablaPacientes(pacientes) {
-            var tbody = $('#rowSinPacientes').closest('tbody');
-            tbody.empty();
-
-            if (!pacientes.length) {
-                tbody.append('<tr id="rowSinPacientes"><td colspan="4" class="text-center text-muted">Sin pacientes activos.</td></tr>');
-                return;
-            }
-
-            pacientes.forEach(function (paciente) {
-                var nombreCompleto = [paciente.nombre || '', paciente.apellido || ''].join(' ').trim();
-                var edad = paciente.edad || '';
-                var telefono = paciente.telefono || '';
-
-                var row = '<tr>' +
-                    '<td>' + escaparHtml(nombreCompleto) + '</td>' +
-                    '<td>' + escaparHtml(telefono) + '</td>' +
-                    '<td>' + escaparHtml(paciente.proximaCita || 'Sin cita') + '</td>' +
-                '</tr>';
-
-                tbody.append(row);
-            });
-        }
-
         function pintarMetricas(pacientes) {
             $('#metricaPacientesActivos').text(pacientes.length);
-        }
-
-        function escaparHtml(texto) {
-            return String(texto)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
         }
     });
 </script>

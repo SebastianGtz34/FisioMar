@@ -7,6 +7,7 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/css/iziToast.min.css">
 </head>
 <body class="bg-light">
 <div id="wrapper" class="d-flex min-vh-100">
@@ -32,11 +33,8 @@
                             </li>
                         </ul>
 
-                        <div id="formAlert" class="alert d-none" role="alert"></div>
-
                         <form id="formRegistroPX" action="acciones_registroPX.php" method="post" novalidate>
                             <input type="hidden" name="accion" value="guardarRegistroPX">
-                            <input type="hidden" name="archivo_origen" value="registro_px.php">
                             <input type="hidden" id="fechaRegistro" name="fechaRegistro">
 
                             <div class="tab-content" id="tabsRegistroContent">
@@ -134,8 +132,6 @@
                                     </div>
                                 </div>
 
-
-
                                 <!-- CONTACTO EMERGENCIA -->
                                 <div class="tab-pane fade" id="emergencia" role="tabpanel" aria-labelledby="emergencia-tab" tabindex="0">
                                     <h2 class="h5 mb-3">Contacto de Emergencia</h2>
@@ -156,7 +152,7 @@
 
                             <!-- BOTONES DE ACCIÓN -->
                             <div class="d-flex gap-2 justify-content-center">
-                                <button type="submit" class="btn btn-primary px-4">Guardar</button>
+                                <button type="submit" class="btn btn-outline-primary px-4">Guardar</button>
                                 <button type="reset" id="btnCancelar" class="btn btn-outline-secondary px-4">Cancelar</button>
                             </div>
                         </form>
@@ -164,11 +160,19 @@
                 </div>
             </div>
         </main>
+        <footer class = "sticky-footer bg-white">
+            <div class = "container my-auto">
+                <div class = "copyright text-center my-auto">
+                    <span>Copyright &copy; SGR <?php echo date("Y"); ?></span>
+                </div>
+            </div>
+        </footer>
     </div>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/js/iziToast.min.js"></script>
 <script>
     $(function () {
         $('#menuContainer').load('menu.php', function () {
@@ -243,16 +247,25 @@
             setTimeout(function () {
                 establecerFechaRegistro();
             }, 0);
-            $('#formAlert').addClass('d-none').removeClass('alert-success alert-danger').text('');
             var primerTab = new bootstrap.Tab(document.querySelector('#datos-personales-tab'));
             primerTab.show();
         });
 
         function mostrarAlerta(mensaje, tipo) {
-            $('#formAlert')
-                .removeClass('d-none alert-success alert-danger')
-                .addClass('alert-' + tipo)
-                .text(mensaje);
+            var mapaTipo = {
+                success: 'success',
+                danger: 'error',
+                warning: 'warning',
+                info: 'info'
+            };
+            var tipoToast = mapaTipo[tipo] || 'info';
+            var tituloToast = tipoToast === 'success' ? 'Éxito' : (tipoToast === 'error' ? 'Error' : 'Aviso');
+
+            iziToast[tipoToast]({
+                title: tituloToast,
+                message: mensaje,
+                position: 'topRight'
+            });
         }
 
         function establecerFechaRegistro() {

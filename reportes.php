@@ -217,9 +217,11 @@
                     pintarTablaReportes(response.data);
                 } else {
                     pintarTablaReportes([]);
+                    iziToast.warning({ title: 'Aviso', message: 'No se pudieron cargar los reportes.', position: 'topRight' });
                 }
             }).fail(function () {
                 pintarTablaReportes([]);
+                iziToast.error({ title: 'Error de conexión', message: 'Error de conexión al cargar reportes.', position: 'topRight' });
             });
         }
 
@@ -334,7 +336,9 @@
                 data: {
                     accion: 'validarDatosReporte',
                     id_paciente: paciente,
-                    tipo: tipo
+                    tipo: tipo,
+                    fecha_inicio: fechaInicio,
+                    fecha_fin: fechaFin
                 }
             }).done(function (validacion) {
                 var $toast = document.getElementById('toastProcesando');
@@ -445,6 +449,7 @@
                 }).done(function (response) {
                     if (!response || !response.success) {
                         window.Reportes.pintarReporte(tipo, []);
+                        iziToast.error({ title: 'Error', message: (response && response.message) ? response.message : 'No se pudo cargar el reporte.', position: 'topRight' });
                         return;
                     }
 
@@ -455,6 +460,7 @@
                     window.Reportes.pintarReporte(tipo, response.data || []);
                 }).fail(function () {
                     window.Reportes.pintarReporte(tipo, []);
+                    iziToast.error({ title: 'Error de conexión', message: 'Error de conexión al cargar el reporte.', position: 'topRight' });
                 });
             },
 

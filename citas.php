@@ -223,6 +223,13 @@
                                 </div>
                         </div>
                 </div>
+            <footer class = "sticky-footer bg-white">
+                <div class = "container my-auto">
+                    <div class = "copyright text-center my-auto">
+                        <span>Copyright &copy; SGR <?php echo date("Y"); ?></span>
+                    </div>
+                </div>
+            </footer>
         </div>
 </div>
 
@@ -407,6 +414,9 @@
                         iziToast.error({ title: 'Error', message: response.message || 'Error al guardar la cita.', position: 'topRight' });
                     }
                 },
+                error: function() {
+                    iziToast.error({ title: 'Error', message: 'Error de conexión al guardar la cita.', position: 'topRight' });
+                }
             });     
         }
 

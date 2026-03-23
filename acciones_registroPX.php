@@ -128,7 +128,7 @@ if ($accion == 'obtenerRegistroPX') {
                 estatus,
                 fecha_registro
             FROM pacientes
-            WHERE archivo_origen = 'registro_px.php' AND estatus = 'Activo'
+            WHERE estatus = 'Activo'
             ORDER BY id_paciente DESC";
 
     $result = $conn->query($sqlObeterReg);
