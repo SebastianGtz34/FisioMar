@@ -13,7 +13,14 @@ $correo = isset($_POST['correo']) ? trim($_POST['correo']) : '';
 $ocupacion = isset($_POST['ocupacion']) ? trim($_POST['ocupacion']) : '';
 $estadoCivil = isset($_POST['estadoCivil']) ? trim($_POST['estadoCivil']) : '';
 $seguroMedico = isset($_POST['seguroMedico']) ? trim($_POST['seguroMedico']) : '';
-$archivoOrigen = isset($_POST['archivo_origen']) ? trim($_POST['archivo_origen']) : 'index.php';
+$sexo = isset($_POST['sexo']) ? trim($_POST['sexo']) : '';
+$diagnostico = isset($_POST['diagnostico']) ? trim($_POST['diagnostico']) : '';
+$antecedentes = isset($_POST['antecedentes']) ? trim($_POST['antecedentes']) : '';
+$folio = isset($_POST['folio']) ? trim($_POST['folio']) : '';
+$estatus = isset($_POST['estatus']) ? trim($_POST['estatus']) : '';
+$contactoEmergencia = isset($_POST['contactoEmergencia']) ? trim($_POST['contactoEmergencia']) : '';
+$telefonoEmergencia = isset($_POST['telefonoEmergencia']) ? trim($_POST['telefonoEmergencia']) : '';
+$idPaciente = isset($_POST['id_paciente']) ? (int)$_POST['id_paciente'] : 0;
 
 if (!$conn instanceof mysqli) {
     echo json_encode([
@@ -24,8 +31,9 @@ if (!$conn instanceof mysqli) {
     exit;
 }
 
+// Guardar nuevo paciente
 if ($accion == 'guardarPaciente') {
-    if ($nombre === '' || $apellido === '' || $fechaNacimiento === '' || $telefono === '' || $correo === '') {
+    if ($nombre === '' || $apellido === '' || $fechaNacimiento === '' || $telefono === '' ) {
         echo json_encode([
             'success' => false,
             'message' => 'Faltan campos obligatorios del paciente.'
@@ -42,10 +50,8 @@ if ($accion == 'guardarPaciente') {
                 ocupacion,
                 estado_civil,
                 seguro_medico,
-                usuario_registro,
-                archivo_origen,
                 fecha_registro
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())";
 
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
@@ -58,7 +64,7 @@ if ($accion == 'guardarPaciente') {
     }
 
     $stmt->bind_param(
-        'ssssssssss',
+        'ssssssss',
         $nombre,
         $apellido,
         $fechaNacimiento,
@@ -66,9 +72,7 @@ if ($accion == 'guardarPaciente') {
         $correo,
         $ocupacion,
         $estadoCivil,
-        $seguroMedico,
-        $usuario,
-        $archivoOrigen
+        $seguroMedico
     );
 
     if ($stmt->execute()) {
@@ -90,16 +94,29 @@ if ($accion == 'guardarPaciente') {
     exit;
 }
 
+// Obtener lista de pacientes
 if ($accion == 'obtenerPacientes') {
     $sql = "SELECT
                 id_paciente,
                 nombre,
                 apellido,
+                fecha_nacimiento,
+                sexo,
                 TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) AS edad,
                 telefono,
                 correo,
+                ocupacion,
+                estado_civil,
+                seguro_medico,
+                diagnostico,
+                antecedentes,
+                folio,
+                estatus,
+                contacto_emergencia,
+                telefono_emergencia,
                 fecha_registro
             FROM pacientes
+            WHERE estatus = 'Activo'
             ORDER BY id_paciente DESC";
 
     $result = $conn->query($sql);
@@ -122,6 +139,128 @@ if ($accion == 'obtenerPacientes') {
         'status' => 'success',
         'data' => $rows
     ]);
+    exit;
+}
+
+// Modificar paciente
+if ($accion == 'modificarPaciente') {
+    if ($idPaciente <= 0) {
+        echo json_encode([
+            'success' => false,
+            'status' => 'error',
+            'message' => 'ID de paciente inválido.'
+        ]);
+        exit;
+    }
+
+    $sql = "UPDATE pacientes SET
+                nombre = ?,
+                apellido = ?,
+                fecha_nacimiento = ?,
+                sexo = ?,
+                telefono = ?,
+                correo = ?,
+                ocupacion = ?,
+                estado_civil = ?,
+                seguro_medico = ?,
+                diagnostico = ?,
+                antecedentes = ?,
+                folio = ?,
+                contacto_emergencia = ?,
+                telefono_emergencia = ?
+            WHERE id_paciente = ?";
+
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        echo json_encode([
+            'success' => false,
+            'status' => 'error',
+            'message' => 'Error al preparar la actualización: ' . $conn->error
+        ]);
+        exit;
+    }
+
+    $stmt->bind_param(
+        'sssssssssssssssi',
+        $nombre,
+        $apellido,
+        $fechaNacimiento,
+        $sexo,
+        $telefono,
+        $correo,
+        $ocupacion,
+        $estadoCivil,
+        $seguroMedico,
+        $diagnostico,
+        $antecedentes,
+        $folio,
+        $estatus,
+        $contactoEmergencia,
+        $telefonoEmergencia,
+        $idPaciente
+    );
+
+    if ($stmt->execute()) {
+        echo json_encode([
+            'success' => true,
+            'status' => 'success',
+            'message' => 'Paciente modificado correctamente.',
+            'id_paciente' => $idPaciente
+        ]);
+    } else {
+        echo json_encode([
+            'success' => false,
+            'status' => 'error',
+            'message' => 'Error al modificar paciente: ' . $stmt->error
+        ]);
+    }
+
+    $stmt->close();
+    exit;
+
+}
+
+// Dar de baja paciente
+if ($accion == 'darBajaPaciente') {
+    if ($idPaciente <= 0) {
+        echo json_encode([
+            'success' => false,
+            'status' => 'error',
+            'message' => 'ID de paciente inválido.'
+        ]);
+        exit;
+    }
+
+    $sql = "UPDATE pacientes SET estatus = 'Inactivo' WHERE id_paciente = ?";
+    $stmt = $conn->prepare($sql);
+
+    if (!$stmt) {
+        echo json_encode([
+            'success' => false,
+            'status' => 'error',
+            'message' => 'Error al preparar la baja del paciente: ' . $conn->error
+        ]);
+        exit;
+    }
+
+    $stmt->bind_param('i', $idPaciente);
+
+    if ($stmt->execute()) {
+        echo json_encode([
+            'success' => true,
+            'status' => 'success',
+            'message' => 'Paciente dado de baja correctamente.',
+            'id_paciente' => $idPaciente
+        ]);
+    } else {
+        echo json_encode([
+            'success' => false,
+            'status' => 'error',
+            'message' => 'Error al dar de baja al paciente: ' . $stmt->error
+        ]);
+    }
+
+    $stmt->close();
     exit;
 }
 

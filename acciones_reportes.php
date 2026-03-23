@@ -5,6 +5,8 @@ $accion = isset($_REQUEST['accion']) ? trim($_REQUEST['accion']) : '';
 $id_reporte = isset($_REQUEST['id_reporte']) ? intval($_REQUEST['id_reporte']) : 0;
 $id_paciente = isset($_POST['id_paciente']) ? intval($_POST['id_paciente']) : 0;
 $tipo = isset($_POST['tipo']) ? trim($_POST['tipo']) : '';
+$fecha_inicio = isset($_POST['fecha_inicio']) ? trim($_POST['fecha_inicio']) : '';
+$fecha_fin = isset($_POST['fecha_fin']) ? trim($_POST['fecha_fin']) : '';
 
 if ($accion !== 'descargarReporte') {
     header('Content-Type: application/json');
@@ -15,6 +17,27 @@ if (!$conn instanceof mysqli) {
         'success' => false,
         'status' => 'error',
         'message' => 'No se pudo conectar a MySQL. ' . (isset($conn_error) ? $conn_error : '')
+    ]);
+    exit;
+}
+
+function bindParamsDinamicos($stmt, $types, $params)
+{
+    $bindValues = [];
+    $bindValues[] = &$types;
+
+    foreach ($params as $key => $value) {
+        $bindValues[] = &$params[$key];
+    }
+
+    return call_user_func_array([$stmt, 'bind_param'], $bindValues);
+}
+
+if ($fecha_inicio !== '' && $fecha_fin !== '' && $fecha_inicio > $fecha_fin) {
+    echo json_encode([
+        'success' => false,
+        'status' => 'error',
+        'message' => 'La fecha de inicio no puede ser mayor a la fecha de fin.'
     ]);
     exit;
 }
@@ -32,12 +55,38 @@ if ($accion === 'validarDatosReporte') {
 
     // Consulta COUNT según tipo para verificar existencia de registros
     if ($tipo === 'Historial Completo') {
-        $sql = "SELECT COUNT(*) AS total FROM datos_clinicos WHERE id_paciente = ?";
+        $sql = "SELECT COUNT(*) AS total
+                FROM datos_clinicos
+                WHERE id_paciente = ?";
+        $tiposBind = 'i';
+        $paramsBind = [$id_paciente];
+        if ($fecha_inicio !== '') {
+            $sql .= " AND DATE(fecha_registro) >= ?";
+            $tiposBind .= 's';
+            $paramsBind[] = $fecha_inicio;
+        }
+        if ($fecha_fin !== '') {
+            $sql .= " AND DATE(fecha_registro) <= ?";
+            $tiposBind .= 's';
+            $paramsBind[] = $fecha_fin;
+        }
     } elseif ($tipo === 'Sesiones Realizadas' || $tipo === 'Resumen de Tratamientos') {
         $sql = "SELECT COUNT(*) AS total
                 FROM citas c
                 WHERE c.id_paciente = ?
                   AND c.estado = 'Realizada'";
+        $tiposBind = 'i';
+        $paramsBind = [$id_paciente];
+        if ($fecha_inicio !== '') {
+            $sql .= " AND c.fecha >= ?";
+            $tiposBind .= 's';
+            $paramsBind[] = $fecha_inicio;
+        }
+        if ($fecha_fin !== '') {
+            $sql .= " AND c.fecha <= ?";
+            $tiposBind .= 's';
+            $paramsBind[] = $fecha_fin;
+        }
     } else {
         echo json_encode([
             'success' => false,
@@ -57,7 +106,7 @@ if ($accion === 'validarDatosReporte') {
         exit;
     }
 
-    $stmt->bind_param('i', $id_paciente);
+    bindParamsDinamicos($stmt, $tiposBind, $paramsBind);
     $stmt->execute();
     $result = $stmt->get_result();
     $row = $result ? $result->fetch_assoc() : null;
@@ -120,7 +169,20 @@ if ($accion === 'obtenerDatosReporte') {
                     dc.tratamiento,
                     dc.fecha_registro
                 FROM datos_clinicos dc
-                WHERE dc.id_paciente = ?
+                WHERE dc.id_paciente = ?";
+        $tiposBind = 'i';
+        $paramsBind = [$id_paciente];
+        if ($fecha_inicio !== '') {
+            $sql .= " AND DATE(dc.fecha_registro) >= ?";
+            $tiposBind .= 's';
+            $paramsBind[] = $fecha_inicio;
+        }
+        if ($fecha_fin !== '') {
+            $sql .= " AND DATE(dc.fecha_registro) <= ?";
+            $tiposBind .= 's';
+            $paramsBind[] = $fecha_fin;
+        }
+        $sql .= "
                 ORDER BY dc.fecha_registro DESC";
     } elseif ($tipo === 'Sesiones Realizadas') {
         $sql = "SELECT
@@ -132,7 +194,20 @@ if ($accion === 'obtenerDatosReporte') {
                 FROM citas c
                 LEFT JOIN datos_clinicos dc ON dc.id_cita = c.id_cita
                 WHERE c.id_paciente = ?
-                  AND c.estado = 'Realizada'
+                  AND c.estado = 'Realizada'";
+        $tiposBind = 'i';
+        $paramsBind = [$id_paciente];
+        if ($fecha_inicio !== '') {
+            $sql .= " AND c.fecha >= ?";
+            $tiposBind .= 's';
+            $paramsBind[] = $fecha_inicio;
+        }
+        if ($fecha_fin !== '') {
+            $sql .= " AND c.fecha <= ?";
+            $tiposBind .= 's';
+            $paramsBind[] = $fecha_fin;
+        }
+        $sql .= "
                 ORDER BY c.fecha DESC, c.hora DESC";
     } elseif ($tipo === 'Resumen de Tratamientos') {
         $sql = "SELECT
@@ -142,7 +217,20 @@ if ($accion === 'obtenerDatosReporte') {
                 FROM citas c
                 LEFT JOIN datos_clinicos dc ON dc.id_cita = c.id_cita
                 WHERE c.id_paciente = ?
-                  AND c.estado = 'Realizada'
+                  AND c.estado = 'Realizada'";
+        $tiposBind = 'i';
+        $paramsBind = [$id_paciente];
+        if ($fecha_inicio !== '') {
+            $sql .= " AND c.fecha >= ?";
+            $tiposBind .= 's';
+            $paramsBind[] = $fecha_inicio;
+        }
+        if ($fecha_fin !== '') {
+            $sql .= " AND c.fecha <= ?";
+            $tiposBind .= 's';
+            $paramsBind[] = $fecha_fin;
+        }
+        $sql .= "
                 GROUP BY COALESCE(NULLIF(dc.tratamiento, ''), 'Sin tratamiento registrado')
                 ORDER BY total_sesiones DESC, tipo_tratamiento ASC";
     } else {
@@ -150,6 +238,15 @@ if ($accion === 'obtenerDatosReporte') {
             'success' => false,
             'status' => 'error',
             'message' => 'Tipo de reporte no soportado.'
+        ]);
+        exit;
+    }
+
+    if (!isset($tiposBind) || !isset($paramsBind)) {
+        echo json_encode([
+            'success' => false,
+            'status' => 'error',
+            'message' => 'No se pudo construir la consulta del reporte.'
         ]);
         exit;
     }
@@ -164,7 +261,7 @@ if ($accion === 'obtenerDatosReporte') {
         exit;
     }
 
-    $stmt->bind_param('i', $id_paciente);
+    bindParamsDinamicos($stmt, $tiposBind, $paramsBind);
     $stmt->execute();
     $result = $stmt->get_result();
 

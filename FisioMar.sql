@@ -51,7 +51,29 @@ INSERT INTO `citas` (`id_cita`, `id_paciente`, `fecha`, `hora`, `motivo`, `estad
 (6, 2, '2026-03-10', '22:00:00', 'gcmucvjg', 'Programada');
 
 -- --------------------------------------------------------
+DROP TABLE IF EXISTS `datos_clinicos`;
+CREATE TABLE IF NOT EXISTS `datos_clinicos` (
+  `id_dato` int NOT NULL AUTO_INCREMENT,
+  `id_paciente` int NOT NULL,
+  `diagnostico` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `antecedentes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `exploracion` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `tratamiento` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `id_cita` int NOT NULL,
+  `fecha_registro` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_dato`),
+  KEY `id_paciente` (`id_paciente`)
+) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Volcado de datos para la tabla `datos_clinicos`
+--
+
+INSERT INTO `datos_clinicos` (`id_dato`, `id_paciente`, `diagnostico`, `antecedentes`, `exploracion`, `tratamiento`, `id_cita`, `fecha_registro`) VALUES
+(1, 1, 'Bien', 'Ninguno', 'Bien', 'Lo mismo', 5, '2026-03-19 21:32:42'),
+(2, 1, '0', '1', '2', '3', 6, '2026-03-19 21:36:41'),
+(3, 1, '1', '2', '3', '4', 5, '2026-03-19 21:40:55');
+COMMIT;
 --
 -- Estructura de tabla para la tabla `pacientes`
 --
